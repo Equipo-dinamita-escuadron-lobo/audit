@@ -1,0 +1,24 @@
+name: "Build Docker image & push to Docker Hub on push to develop branch"
+on:
+  push:
+    branches:
+      - develop
+    paths:
+      - '**.java'
+      - 'pom.xml'
+      - 'Dockerfile'
+      - 'src/**'
+      - 'mvnw'
+      - '.mvn/**'
+jobs:
+
+
+  docker:
+    uses:
+      Equipo-dinamita-escuadron-lobo/workflows/.github/workflows/backend-on-push-to-dev.yaml@main
+    with:
+      repository-name: ${{ github.event.repository.name }}
+    secrets:
+      DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+      DOCKER_ACCESS_TOKEN: ${{ secrets.DOCKER_ACCESS_TOKEN }}
+      PAT: ${{ secrets.PAT }}

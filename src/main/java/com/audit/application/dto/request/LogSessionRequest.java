@@ -18,6 +18,7 @@ import lombok.Setter;
 @Setter
 @Builder
 public class LogSessionRequest {
+    private String sessionId;
     private String userId;
     private String userName;
     private UserRole userRole;

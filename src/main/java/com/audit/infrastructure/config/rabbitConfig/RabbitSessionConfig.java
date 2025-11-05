@@ -19,9 +19,7 @@ public class RabbitSessionConfig {
 
     public static final String AUDIT_EXCHANGE = "audit.exchange";
     public static final String SESSION_AUDIT_QUEUE = "audit.session.queue";
-
-    public static final String SESSION_LOGIN_ROUTING_KEY = "session.login";
-    public static final String SESSION_LOGOUT_ROUTING_KEY = "session.logout";
+    public static final String SESSION_EVENT_ROUTING_KEY = "session.event";
 
     // spring bean for rabbitmq exchange
     @Bean
@@ -36,16 +34,9 @@ public class RabbitSessionConfig {
     }
 
     @Bean
-    public Binding sessionLoginBinding(Queue sessionAuditQueue, TopicExchange auditExchange) {
+    public Binding sessionEventBinding(Queue sessionAuditQueue, TopicExchange auditExchange) {
         return BindingBuilder.bind(sessionAuditQueue)
                 .to(auditExchange)
-                .with(SESSION_LOGIN_ROUTING_KEY);
-    }
-
-    @Bean
-    public Binding sessionLogoutBinding(Queue sessionAuditQueue, TopicExchange auditExchange) {
-        return BindingBuilder.bind(sessionAuditQueue)
-                .to(auditExchange)
-                .with(SESSION_LOGOUT_ROUTING_KEY);
+                .with(SESSION_EVENT_ROUTING_KEY);
     }
 }

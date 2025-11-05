@@ -19,11 +19,10 @@ public class GetSessionsRequest {
 
     private ZonedDateTime dateFrom;
     private ZonedDateTime dateTo;
-    private String userId;
     private String userName;
     private UserRole userRole;
     private UserAction action;
-    private String ipAddress;
+    private String requestingUserRole;
 
     @Builder.Default
     private Integer page = 0;

@@ -20,6 +20,7 @@ public class AuditSession {
 
     // Attributes
     private final Long id;
+    private final String sessionId;
     private final String userId;
     private final String userName;
     private final UserRole userRole;
@@ -32,9 +33,10 @@ public class AuditSession {
     /**
      * Private constructor to enforce the use of the factory method
      */
-    private AuditSession(Long id, String userId, String userName, UserRole userRole, UserAction action,
+    private AuditSession(Long id, String sessionId, String userId, String userName, UserRole userRole, UserAction action,
             ZonedDateTime actionAt, String ipAddress, ZonedDateTime createdAt) {
         this.id = id;
+        this.sessionId = sessionId;
         this.userId = userId;
         this.userName = userName;
         this.userRole = userRole;
@@ -48,7 +50,7 @@ public class AuditSession {
     /**
      * Factory method to create a new AuditSession instance with validation
      */
-    public static AuditSession create(String userId, String userName, UserRole userRole, UserAction action,
+    public static AuditSession create(String sessionId, String userId, String userName, UserRole userRole, UserAction action,
             ZonedDateTime actionAt, String ipAddress) {
 
         validateUserData(userId, userName, userRole);
@@ -58,18 +60,18 @@ public class AuditSession {
 
         ZonedDateTime createdAt = ZonedDateTime.now();
 
-        return new AuditSession(null, userId, userName, userRole, action, actionAt, ipAddress,
+        return new AuditSession(null, sessionId, userId, userName, userRole, action, actionAt, ipAddress,
                 createdAt);
     }
 
     /**
      * Factory method to reconstruct an existing AuditSession instance
      */
-    public static AuditSession reconstruct(Long id, String userId, String userName, UserRole userRole,
+    public static AuditSession reconstruct(Long id, String sessionId, String userId, String userName, UserRole userRole,
             UserAction action,
             ZonedDateTime actionAt, String ipAddress, ZonedDateTime createdAt) {
 
-        return new AuditSession(id, userId, userName, userRole, action, actionAt, ipAddress,
+        return new AuditSession(id, sessionId, userId, userName, userRole, action, actionAt, ipAddress,
                 createdAt);
     }
 

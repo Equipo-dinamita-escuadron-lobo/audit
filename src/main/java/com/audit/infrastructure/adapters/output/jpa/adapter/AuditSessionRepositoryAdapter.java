@@ -2,19 +2,30 @@ package com.audit.infrastructure.adapters.output.jpa.adapter;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.JpaSort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
 
+import com.audit.domain.enums.UserRole;
 import com.audit.domain.model.AuditSession;
 import com.audit.domain.model.AuditSessionFilter;
+import com.audit.domain.model.CombinedSession;
+import com.audit.domain.model.PageResult;
 import com.audit.domain.port.output.AuditSessionRepositoryPort;
 import com.audit.infrastructure.adapters.output.jpa.entity.AuditSessionEntity;
 import com.audit.infrastructure.adapters.output.jpa.mapper.AuditSessionJpaMapper;
+import com.audit.infrastructure.adapters.output.jpa.projection.SessionProjection;
 import com.audit.infrastructure.adapters.output.jpa.repository.IAuditSessionRepository;
 
 import jakarta.persistence.criteria.Predicate;
+
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -36,27 +47,28 @@ public class AuditSessionRepositoryAdapter implements AuditSessionRepositoryPort
     }
 
     @Override
-    public List<AuditSession> findByFilters(AuditSessionFilter filter) {
-        log.debug("Finding audit sessions with filters: {}", filter);
-
+    public PageResult<AuditSession> findPageByFilters(AuditSessionFilter filter) {
         Specification<AuditSessionEntity> spec = buildSpecification(filter);
-
+        Sort sort = buildSortForNativeQuery(filter);
         if (filter.getPage() != null && filter.getSize() != null) {
             PageRequest pageRequest = PageRequest.of(
                     filter.getPage(),
                     filter.getSize(),
-                    buildSort(filter));
-            return auditSessionRepository.findAll(spec, pageRequest)
-                    .getContent()
+                    sort);
+            Page<AuditSessionEntity> page = auditSessionRepository.findAll(spec, pageRequest);
+            List<AuditSession> content = page.getContent()
                     .stream()
                     .map(mapper::toDomain)
                     .toList();
+            return new PageResult<>(content, page.getTotalElements());
         }
 
-        return auditSessionRepository.findAll(spec, buildSort(filter))
+        List<AuditSession> all = auditSessionRepository.findAll(spec, sort)
                 .stream()
                 .map(mapper::toDomain)
                 .toList();
+
+        return new PageResult<>(all, all.size());
     }
 
     @Override
@@ -67,16 +79,79 @@ public class AuditSessionRepositoryAdapter implements AuditSessionRepositoryPort
     }
 
     @Override
-    public long countByFilters(AuditSessionFilter filter) {
-        log.debug("Counting audit sessions with filters: {}", filter);
-        Specification<AuditSessionEntity> spec = buildSpecification(filter);
-        return auditSessionRepository.count(spec);
-    }
-
-    @Override
     public boolean existsActiveSession(String userId) {
         log.debug("Checking active session for user: {}", userId);
         return auditSessionRepository.existsActiveSession(userId);
+    }
+
+    private Sort buildSortForNativeQuery(AuditSessionFilter filter) {
+        String sortField = filter.getSortField() != null ? filter.getSortField() : "actionAt";
+        String sortDirection = filter.getSortDirection() != null ? filter.getSortDirection() : "DESC";
+        
+        // Mapear campos de la entidad a aliases de la consulta SQL nativa
+        String mappedSortField = switch (sortField) {
+            case "actionAt" -> "loginTime";  // actionAt de la entidad → loginTime en SQL
+            case "userName" -> "userName";
+            case "userRole" -> "userRole";
+            default -> "loginTime";
+        };
+        
+        Sort.Direction direction = sortDirection.equalsIgnoreCase("ASC") 
+            ? Sort.Direction.ASC 
+            : Sort.Direction.DESC;
+        
+        // JpaSort.unsafe permite usar aliases de consultas SQL nativas
+        return JpaSort.unsafe(direction, mappedSortField);
+    }
+
+    @Override
+    public Optional<AuditSession> findBySessionId(String sessionId) {
+        log.debug("Finding audit session by sessionId: {}", sessionId);
+        return auditSessionRepository.findBySessionId(sessionId)
+                .map(mapper::toDomain);
+    }
+
+    private CombinedSession projectionToDomain(SessionProjection projection) {
+        ZonedDateTime loginTime = projection.getLoginTime() != null 
+            ? ZonedDateTime.ofInstant(projection.getLoginTime(), ZoneId.of("America/Bogota"))
+            : null;
+        
+        ZonedDateTime logoutTime = projection.getLogoutTime() != null 
+            ? ZonedDateTime.ofInstant(projection.getLogoutTime(), ZoneId.of("America/Bogota"))
+            : null;
+        return CombinedSession.reconstruct(
+                projection.getSessionId(),
+                projection.getUserName(),
+                projection.getUserRole(),
+                loginTime,
+                logoutTime
+        );
+    }
+
+    @Override
+    public PageResult<CombinedSession> findCombinedSessions(AuditSessionFilter filter) {
+        Sort sort = buildSortForNativeQuery(filter);
+        Pageable pageable = PageRequest.of(
+            filter.getPage(),
+            filter.getSize(),
+            sort
+        );
+        
+        Page<SessionProjection> page = auditSessionRepository.findCombinedSessions(
+            filter.getDateFrom(),
+            filter.getDateTo(),
+            filter.getUserName(),
+            filter.getUserRole() != null ? filter.getUserRole().name() : null,
+            filter.getRequestingUserRole(),
+            pageable
+        );
+
+        List<CombinedSession> sessions = page.getContent().stream()
+            .map(this::projectionToDomain)
+            .toList();
+            
+        return new PageResult<>(sessions, page.getTotalElements());
+    
     }
 
     private Specification<AuditSessionEntity> buildSpecification(AuditSessionFilter filter) {
@@ -92,8 +167,6 @@ public class AuditSessionRepositoryAdapter implements AuditSessionRepositoryPort
                 predicates.add(criteriaBuilder.lessThanOrEqualTo(
                         root.get("actionAt"), filter.getDateTo()));
             }
-
-            // userId filter removed intentionally (not used)
 
             if (filter.getUserName() != null && !filter.getUserName().isBlank()) {
                 predicates.add(criteriaBuilder.like(
@@ -111,18 +184,11 @@ public class AuditSessionRepositoryAdapter implements AuditSessionRepositoryPort
                         root.get("action"), filter.getAction()));
             }
 
-            // ipAddress filter removed intentionally (not used)
-
+            if ("PROFESOR".equals(filter.getRequestingUserRole())) {
+                predicates.add(criteriaBuilder.notEqual(
+                        root.get("userRole"), UserRole.ADMIN));
+            }
             return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
         };
-    }
-
-    private Sort buildSort(AuditSessionFilter filter) {
-        String sortField = filter.getSortField() != null ? filter.getSortField() : "actionAt";
-        String sortDirection = filter.getSortDirection() != null ? filter.getSortDirection() : "DESC";
-
-        return sortDirection.equalsIgnoreCase("ASC")
-                ? Sort.by(sortField).ascending()
-                : Sort.by(sortField).descending();
     }
 }

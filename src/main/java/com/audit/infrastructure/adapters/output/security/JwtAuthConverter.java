@@ -16,6 +16,7 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtGra
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.lang.NonNull;
 
 /**
  * @brief JWT authentication converter for Spring Security
@@ -42,10 +43,11 @@ public class JwtAuthConverter implements Converter<Jwt, AbstractAuthenticationTo
      * @return The corresponding AbstractAuthenticationToken
      */
     @Override
-    public AbstractAuthenticationToken convert(Jwt jwt) {
+    public AbstractAuthenticationToken convert(@NonNull Jwt jwt) {
 
         Collection<GrantedAuthority> authorities = Stream
-                .concat(jwtGrantedAuthoritiesConverter.convert(jwt).stream(), extractResourceRoles(jwt).stream())
+                .concat(jwtGrantedAuthoritiesConverter.convert(jwt).stream(), 
+                        extractRealmRoles(jwt).stream())
                 .toList();
 
         this.jwtToken = jwt;
@@ -57,8 +59,9 @@ public class JwtAuthConverter implements Converter<Jwt, AbstractAuthenticationTo
     /**
      * @brief Returns the authenticated user's name from the JWT
      * 
-     * By default, uses the "sub" claim from the JWT, but can be configured
-     * to use a different claim by setting the "jwt.auth.converter.principle-attribute" property.
+     *        By default, uses the "sub" claim from the JWT, but can be configured
+     *        to use a different claim by setting the
+     *        "jwt.auth.converter.principle-attribute" property.
      *
      * @param jwt The JWT from which to extract the username
      * @return The authenticated user's name
@@ -76,39 +79,26 @@ public class JwtAuthConverter implements Converter<Jwt, AbstractAuthenticationTo
     /**
      * @brief Extracts roles from the "resource_access" claim of the JWT
      * 
-     * Converts each role into a SimpleGrantedAuthority with "ROLE_" prefix.
-     * If the "resource_access" claim or specific resource ID or its roles are not present,
-     * returns an empty collection.
+     *        Converts each role into a SimpleGrantedAuthority with "ROLE_" prefix.
+     *        If the "resource_access" claim or specific resource ID or its roles
+     *        are not present,
+     *        returns an empty collection.
      * 
      * @param jwt The JWT from which to extract roles
      * @return A collection of GrantedAuthority representing the roles
      */
     @SuppressWarnings("unchecked")
-    private Collection<? extends GrantedAuthority> extractResourceRoles(Jwt jwt) {
-        Map<String, Object> resourceAccess;
-        Map<String, Object> resource;
-        Collection<String> resourceRoles;
+    private Collection<? extends GrantedAuthority> extractRealmRoles(Jwt jwt) {
+        Map<String, Object> realmAccess = jwt.getClaim("realm_access");
 
-        if (jwt.getClaim("resource_access") == null) {
+        if (realmAccess == null || realmAccess.get("roles") == null) {
             return List.of();
         }
 
-        resourceAccess = jwt.getClaim("resource_access");
+        Collection<String> realmRoles = (Collection<String>) realmAccess.get("roles");
 
-        if (resourceAccess.get(resourceId) == null) {
-            return List.of();
-        }
-
-        resource = (Map<String, Object>) resourceAccess.get(resourceId);
-
-        if (resource.get("roles") == null) {
-            return List.of();
-        }
-
-        resourceRoles = (Collection<String>) resource.get("roles");
-
-        return resourceRoles.stream()
-                .map(role -> new SimpleGrantedAuthority("ROLE_".concat(role)))
+        return realmRoles.stream()
+                .map(role -> new SimpleGrantedAuthority("ROLE_" + role.toUpperCase())) // ← Convertir a mayúsculas
                 .toList();
     }
 

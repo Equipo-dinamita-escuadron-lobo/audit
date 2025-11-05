@@ -8,10 +8,8 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
 
-import com.audit.infrastructure.adapters.input.security.filter.AuditAuthorizationFilter;
 
 import lombok.RequiredArgsConstructor;
 
@@ -34,40 +32,29 @@ public class SecurityConfig {
     /**
      * @brief Configures the security filter chain for HTTP requests
      * 
-     * Disables CSRF protection, permits anonymous access to Swagger and actuator endpoints,
-     * requires authentication for all other endpoints, and configures JWT authentication
-     * with stateless session management.
+     *        Disables CSRF protection, permits anonymous access to Swagger and
+     *        actuator endpoints,
+     *        requires authentication for all other endpoints, and configures JWT
+     *        authentication
+     *        with stateless session management.
      *
      * @param httpSecurity The HttpSecurity object to configure
      * @return The configured security filter chain
      * @throws Exception If there's an error configuring the security filter chain
      */
-    // @Bean
-    // SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
-    //     return httpSecurity
-    //             .csrf(csrf -> csrf.disable())
-    //             .authorizeHttpRequests(http -> http
-    //                     .requestMatchers("/swagger-ui/**", "/v3/api-docs/**","/actuator/**").permitAll()
-    //                     .anyRequest()
-    //                     .authenticated())
-    //             .oauth2ResourceServer(oauth -> {
-    //                 oauth.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthConverter));
-    //             })
-    //             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-    //             .build();
-    // }
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity, AuditAuthorizationFilter auditFilter) throws Exception {
+    SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
         return httpSecurity
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(http -> http
-                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**","/actuator/**").permitAll()
-                        .anyRequest().authenticated())
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/actuator/**").permitAll()
+                        .anyRequest()
+                        .authenticated())
                 .oauth2ResourceServer(oauth -> {
                     oauth.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthConverter));
                 })
-                .addFilterAfter(auditFilter, BearerTokenAuthenticationFilter.class) // Agregar filtro
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .build();
     }
+
 }

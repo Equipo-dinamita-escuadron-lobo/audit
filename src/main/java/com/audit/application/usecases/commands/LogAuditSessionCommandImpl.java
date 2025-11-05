@@ -23,6 +23,7 @@ public class LogAuditSessionCommandImpl implements LogAuditSessionCommand {
 
         try {
             AuditSession session = AuditSession.create(
+                    request.getSessionId(),
                     request.getUserId(),
                     request.getUserName(),
                     request.getUserRole(),

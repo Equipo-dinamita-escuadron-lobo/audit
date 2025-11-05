@@ -32,6 +32,9 @@ public class AuditSessionEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "session_id", nullable = false, length = 100)
+    private String sessionId;
+
     @Column(name = "user_id", nullable = false)
     private String userId;
 

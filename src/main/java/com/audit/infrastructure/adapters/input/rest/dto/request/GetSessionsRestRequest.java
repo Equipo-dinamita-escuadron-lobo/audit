@@ -33,16 +33,12 @@ public class GetSessionsRestRequest {
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     private ZonedDateTime dateTo;
 
-    private String userId;
-
     @Size(max = 100, message = "User name must not exceed 100 characters")
     private String userName;
 
     private UserRole userRole;
 
     private UserAction action;
-
-    private String ipAddress;
 
     @Builder.Default
     @Min(value = 0, message = "Page must be greater than or equal to 0")
@@ -54,7 +50,7 @@ public class GetSessionsRestRequest {
     private Integer size = 20;
 
     @Builder.Default
-    @Pattern(regexp = "^(actionAt|userId|userName|userRole|action)$", message = "Invalid sort field")
+    @Pattern(regexp = "^(actionAt|userName|userRole)$", message = "Invalid sort field")
     private String sortField = "actionAt";
 
     @Builder.Default

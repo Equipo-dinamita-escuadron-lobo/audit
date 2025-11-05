@@ -18,10 +18,9 @@ public class AuditSessionFilter {
 
     private final ZonedDateTime dateFrom;
     private final ZonedDateTime dateTo;
-    private final String userId;
+
     private final String userName;
     private final UserRole userRole;
-    private final String ipAddress;
     private final UserAction action;
 
     private final Integer page;
@@ -29,20 +28,30 @@ public class AuditSessionFilter {
     private final String sortField;
     private final String sortDirection;
 
+    private final String requestingUserRole;
+
     public boolean hasDateRange() {
         return dateFrom != null && dateTo != null;
-    }
-
-    public boolean hasUserFilter() {
-        return userId != null || userName != null;
     }
 
     public boolean hasRoleFilter() {
         return userRole != null;
     }
 
+    public boolean hasUserNameFilter() {
+        return userName != null && !userName.isBlank();
+    }
+    
     public boolean hasActionFilter() {
         return action != null;
+    }
+
+    public boolean hasPagination() {
+        return page != null && size != null;
+    }
+
+    public boolean hasSorting() {
+        return sortField != null && sortDirection != null;
     }
 
     @Override
@@ -54,12 +63,13 @@ public class AuditSessionFilter {
         AuditSessionFilter that = (AuditSessionFilter) o;
         return Objects.equals(dateFrom, that.dateFrom) &&
                 Objects.equals(dateTo, that.dateTo) &&
-                Objects.equals(userId, that.userId) &&
-                Objects.equals(userRole, that.userRole);
+                Objects.equals(userName, that.userName) &&
+                Objects.equals(userRole, that.userRole) &&
+                Objects.equals(action, that.action);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(dateFrom, dateTo, userId, userRole);
+        return Objects.hash(dateFrom, dateTo, userName, userRole, action);
     }
 }

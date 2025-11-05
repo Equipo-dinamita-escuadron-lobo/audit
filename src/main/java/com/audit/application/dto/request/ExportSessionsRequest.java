@@ -20,11 +20,9 @@ public class ExportSessionsRequest {
     private String requestedBy;
     private ZonedDateTime dateFrom;
     private ZonedDateTime dateTo;
-    private String userId;
     private String userName;
     private UserRole userRole;
     private UserAction action;
-    private String ipAddress;
 
     @Builder.Default
     private String format = "EXCEL";

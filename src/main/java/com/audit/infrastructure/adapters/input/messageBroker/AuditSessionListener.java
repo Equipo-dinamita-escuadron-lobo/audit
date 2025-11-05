@@ -53,7 +53,8 @@ public class AuditSessionListener extends AbstractMessageListener<SessionEventDt
 
     @Override
     protected boolean isValidEvent(SessionEventDto event) {
-        return event != null 
+        return event != null
+            && event.getSessionId() != null && !event.getSessionId().trim().isEmpty()
             && event.getUserId() != null && !event.getUserId().trim().isEmpty()
             && event.getUserName() != null && !event.getUserName().trim().isEmpty()
             && event.getAction() != null 

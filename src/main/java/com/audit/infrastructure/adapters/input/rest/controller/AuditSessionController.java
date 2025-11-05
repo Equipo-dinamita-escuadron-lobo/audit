@@ -21,6 +21,7 @@ import com.audit.application.port.input.queries.GetAuditSessionsQuery;
 import com.audit.infrastructure.adapters.input.rest.dto.request.ExportSessionsRestRequest;
 import com.audit.infrastructure.adapters.input.rest.dto.request.GetSessionsRestRequest;
 import com.audit.infrastructure.adapters.input.rest.mapper.SessionRestMapper;
+import com.audit.infrastructure.adapters.output.security.SecurityContextService;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -35,17 +36,24 @@ public class AuditSessionController {
     private final GetAuditSessionsQuery getAuditSessionsQuery;
     private final ExportAuditSessionsQuery exportAuditSessionsQuery;
     private final SessionRestMapper sessionRestMapper;
+    private final SecurityContextService securityContextService;
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN','DOCENTE','ESTUDIANTE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROFESOR')")
     public ResponseEntity<SessionsPageResponse> getAuditSessions(
             @Valid @ModelAttribute GetSessionsRestRequest restRequest) {
-        log.info("GET /audit/sessions - Filters: dateFrom={}, dateTo={}, page={}",
-                restRequest.getDateFrom(), restRequest.getDateTo(), restRequest.getPage());
+        String currentUserRole = securityContextService.getCurrentUserRole();
+        String currentUsername = securityContextService.getCurrentUsername();
+
+        log.info("User '{}' with role '{}' requesting audit sessions",
+                currentUsername, currentUserRole);
+
         GetSessionsRequest request = sessionRestMapper.toGetSessionsRequest(restRequest);
+
         SessionsPageResponse response = getAuditSessionsQuery.execute(request);
-        log.info("Retrieved {} sessions, page {}/{}",
-                response.getSessions().size(), response.getCurrentPage() + 1, response.getTotalPages());
+
+        log.debug("Returning {} sessions for user '{}'",
+                response.getSessions().size(), currentUsername);
 
         return ResponseEntity.ok(response);
     }

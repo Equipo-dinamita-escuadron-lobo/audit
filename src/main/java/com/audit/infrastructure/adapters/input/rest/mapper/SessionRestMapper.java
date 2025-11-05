@@ -6,6 +6,7 @@ import com.audit.application.dto.request.ExportSessionsRequest;
 import com.audit.application.dto.request.GetSessionsRequest;
 import com.audit.infrastructure.adapters.input.rest.dto.request.ExportSessionsRestRequest;
 import com.audit.infrastructure.adapters.input.rest.dto.request.GetSessionsRestRequest;
+import com.audit.infrastructure.adapters.output.security.SecurityContextService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -13,38 +14,38 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class SessionRestMapper {
 
+    private final SecurityContextService securityContextService;
 
     public GetSessionsRequest toGetSessionsRequest(GetSessionsRestRequest restRequest) {
-        GetSessionsRequest.GetSessionsRequestBuilder builder = GetSessionsRequest.builder()
-            .dateFrom(restRequest.getDateFrom())
-            .dateTo(restRequest.getDateTo())
-            .userId(restRequest.getUserId())
-            .userName(restRequest.getUserName())
-            .userRole(restRequest.getUserRole())
-            .action(restRequest.getAction())
-            .ipAddress(restRequest.getIpAddress())
-            .page(restRequest.getPage())
-            .size(restRequest.getSize())
-            .sortField(restRequest.getSortField())
-            .sortDirection(restRequest.getSortDirection());
-            
 
-        return builder.build();
-                
-    }
+        String requestingUserRole = securityContextService.getCurrentUserRole();
 
-    public ExportSessionsRequest toExportSessionsRequest(ExportSessionsRestRequest restRequest) {
-        return ExportSessionsRequest.builder()
+        return GetSessionsRequest.builder()
                 .dateFrom(restRequest.getDateFrom())
                 .dateTo(restRequest.getDateTo())
-                .userId(restRequest.getUserId())
                 .userName(restRequest.getUserName())
                 .userRole(restRequest.getUserRole())
                 .action(restRequest.getAction())
-                .ipAddress(restRequest.getIpAddress())
+                .page(restRequest.getPage())
+                .size(restRequest.getSize())
+                .sortField(restRequest.getSortField())
+                .sortDirection(restRequest.getSortDirection())
+                .requestingUserRole(requestingUserRole)
+                .build();
+    }
+
+    public ExportSessionsRequest toExportSessionsRequest(ExportSessionsRestRequest restRequest) {
+        //String requestingUserRole = securityContextService.getCurrentUserRole();
+        return ExportSessionsRequest.builder()
+                .dateFrom(restRequest.getDateFrom())
+                .dateTo(restRequest.getDateTo())
+                .userName(restRequest.getUserName())
+                .userRole(restRequest.getUserRole())
+                .action(restRequest.getAction())
                 .format(restRequest.getFormat())
                 .sortField(restRequest.getSortField())
                 .sortDirection(restRequest.getSortDirection())
+                //.requestingUserRole(requestingUserRole)
                 .build();
     }
 }

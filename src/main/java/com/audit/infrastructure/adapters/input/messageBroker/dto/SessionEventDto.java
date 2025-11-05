@@ -21,6 +21,9 @@ import lombok.ToString;
 @ToString
 public class SessionEventDto {
 
+    @JsonProperty("session_id")
+    private String sessionId;
+
     @JsonProperty("user_id")
     private String userId;
 

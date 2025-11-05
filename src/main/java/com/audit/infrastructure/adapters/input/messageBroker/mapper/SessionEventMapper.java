@@ -10,6 +10,7 @@ public class SessionEventMapper {
 
     public LogSessionRequest toRequest(SessionEventDto eventDto) {
         return LogSessionRequest.builder()
+            .sessionId(eventDto.getSessionId())
             .userId(eventDto.getUserId())
             .userName(eventDto.getUserName())
             .userRole(eventDto.getUserRole())

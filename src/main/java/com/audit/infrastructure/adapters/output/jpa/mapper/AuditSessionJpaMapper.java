@@ -11,6 +11,7 @@ public class AuditSessionJpaMapper {
     public AuditSession toDomain(AuditSessionEntity entity) {
         return AuditSession.reconstruct(
                 entity.getId(),
+                entity.getSessionId(),
                 entity.getUserId(),
                 entity.getUserName(),
                 entity.getUserRole(),
@@ -23,6 +24,7 @@ public class AuditSessionJpaMapper {
     public AuditSessionEntity toEntity(AuditSession domain) {
         return AuditSessionEntity.builder()
                 .id(domain.getId())
+                .sessionId(domain.getSessionId())
                 .userId(domain.getUserId())
                 .userName(domain.getUserName())
                 .userRole(domain.getUserRole())

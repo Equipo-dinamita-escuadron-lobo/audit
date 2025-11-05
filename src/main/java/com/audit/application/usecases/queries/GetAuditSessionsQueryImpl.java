@@ -3,10 +3,13 @@ package com.audit.application.usecases.queries;
 import java.util.List;
 
 import com.audit.application.dto.request.GetSessionsRequest;
+import com.audit.application.dto.responses.SessionAuditResponse;
 import com.audit.application.dto.responses.SessionsPageResponse;
 import com.audit.application.port.input.queries.GetAuditSessionsQuery;
-import com.audit.domain.model.AuditSession;
+
 import com.audit.domain.model.AuditSessionFilter;
+import com.audit.domain.model.CombinedSession;
+import com.audit.domain.model.PageResult;
 import com.audit.domain.port.output.AuditSessionRepositoryPort;
 
 /**
@@ -26,26 +29,48 @@ public class GetAuditSessionsQueryImpl implements GetAuditSessionsQuery {
 
         AuditSessionFilter filter = mapToFilter(request);
 
-        List<AuditSession> sessions = auditSessionRepository.findByFilters(filter);
-        long totalCount = auditSessionRepository.countByFilters(filter);
+        PageResult<CombinedSession> pageResult = auditSessionRepository.findCombinedSessions(filter);
 
-        return SessionsPageResponse.from(
-                sessions,
-                totalCount,
-                request.getPage(),
-                request.getSize());
+        List<SessionAuditResponse> sessions = pageResult.getContent().stream()
+            .map(this::toResponse)
+            .toList();
+
+        int totalPages = (int) Math.ceil(
+            (double) pageResult.getTotalElements() / request.getSize()
+        );
+        
+        return SessionsPageResponse.builder()
+                .sessions(sessions)
+                .totalElements(pageResult.getTotalElements())
+                .totalPages(totalPages)
+                .currentPage(request.getPage())
+                .pageSize(request.getSize())
+                .hasNext(request.getPage() < totalPages - 1)
+                .hasPrevious(request.getPage() > 0)
+                .build();
     }
-    
+
+    private SessionAuditResponse toResponse(CombinedSession session) {
+        return SessionAuditResponse.builder()
+                .userName(session.getUserName())
+                .userRole(session.getUserRole().name())
+                .loginTime(session.getLoginTime())
+                .logoutTime(session.getLogoutTime())
+                .build();
+    }
+
     private AuditSessionFilter mapToFilter(GetSessionsRequest request) {
         return AuditSessionFilter.builder()
                 .dateFrom(request.getDateFrom())
                 .dateTo(request.getDateTo())
-                .userId(request.getUserId())
                 .userName(request.getUserName())
+                .userRole(request.getUserRole())
                 .action(request.getAction())
                 .page(request.getPage())
                 .size(request.getSize())
-                .userRole(request.getUserRole())
+                .sortField(request.getSortField())
+                .sortDirection(request.getSortDirection())
+                .requestingUserRole(request.getRequestingUserRole())
                 .build();
     }
     

@@ -16,7 +16,7 @@ import com.itextpdf.layout.properties.TextAlignment;
 import com.itextpdf.layout.properties.UnitValue;
 
 import java.io.ByteArrayOutputStream;
-import java.time.format.DateTimeFormatter;
+//import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 /**
@@ -29,7 +29,7 @@ import java.util.List;
 @Slf4j
 public class FileExportServiceImpl implements FileExportService {
 
-    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    //private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @Override
     public byte[] exportSessions(List<SessionAuditResponse> sessions, String format) {
@@ -75,17 +75,11 @@ public class FileExportServiceImpl implements FileExportService {
             for (SessionAuditResponse session : sessions) {
                 Row row = sheet.createRow(rowNum++);
 
-                row.createCell(0).setCellValue(session.getId());
-                row.createCell(1).setCellValue(session.getUserId());
                 row.createCell(2).setCellValue(session.getUserName());
-                row.createCell(3).setCellValue(session.getUserRole().name());
-                row.createCell(4).setCellValue(session.getAction().name());
+                row.createCell(3).setCellValue(session.getUserRole());
 
                 org.apache.poi.ss.usermodel.Cell dateCell = row.createCell(5);
-                dateCell.setCellValue(session.getActionAt().format(DATE_FORMATTER));
                 dateCell.setCellStyle(dateStyle);
-
-                row.createCell(6).setCellValue(session.getIpAddress() != null ? session.getIpAddress() : "");
             }
 
             // Adjust column widths
@@ -133,17 +127,8 @@ public class FileExportServiceImpl implements FileExportService {
             }
 
             for (SessionAuditResponse session : sessions) {
-                table.addCell(
-                        new com.itextpdf.layout.element.Cell().add(new Paragraph(String.valueOf(session.getId()))));
-                table.addCell(
-                        new com.itextpdf.layout.element.Cell().add(new Paragraph(String.valueOf(session.getUserId()))));
                 table.addCell(new com.itextpdf.layout.element.Cell().add(new Paragraph(session.getUserName())));
-                table.addCell(new com.itextpdf.layout.element.Cell().add(new Paragraph(session.getUserRole().name())));
-                table.addCell(new com.itextpdf.layout.element.Cell().add(new Paragraph(session.getAction().name())));
-                table.addCell(new com.itextpdf.layout.element.Cell()
-                        .add(new Paragraph(session.getActionAt().format(DATE_FORMATTER))));
-                table.addCell(new com.itextpdf.layout.element.Cell()
-                        .add(new Paragraph(session.getIpAddress() != null ? session.getIpAddress() : "")));
+                table.addCell(new com.itextpdf.layout.element.Cell().add(new Paragraph(session.getUserRole())));
             }
             document.add(table);
 

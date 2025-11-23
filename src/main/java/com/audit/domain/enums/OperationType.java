@@ -3,7 +3,8 @@ package com.audit.domain.enums;
 public enum OperationType {
     CREATE("Creación"),
     UPDATE("Actualización"),
-    DELETE("Eliminación");
+    DELETE("Eliminación"),
+    INACTIVATE("Inactivación");
 
     private final String description;
 

@@ -14,14 +14,14 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.audit.application.dto.request.ExportSessionsRequest;
 import com.audit.application.dto.request.GetSessionsRequest;
-import com.audit.application.dto.responses.ExportSessionsResponse;
-import com.audit.application.dto.responses.SessionsPageResponse;
+import com.audit.application.dto.response.ExportFileResponse;
+import com.audit.application.dto.response.PageResponse;
+import com.audit.application.dto.response.SessionAuditResponse;
 import com.audit.application.port.input.queries.ExportAuditSessionsQuery;
 import com.audit.application.port.input.queries.GetAuditSessionsQuery;
 import com.audit.infrastructure.adapters.input.rest.dto.request.ExportSessionsRestRequest;
 import com.audit.infrastructure.adapters.input.rest.dto.request.GetSessionsRestRequest;
 import com.audit.infrastructure.adapters.input.rest.mapper.SessionRestMapper;
-import com.audit.infrastructure.adapters.output.security.SecurityContextService;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -36,30 +36,18 @@ public class AuditSessionController {
     private final GetAuditSessionsQuery getAuditSessionsQuery;
     private final ExportAuditSessionsQuery exportAuditSessionsQuery;
     private final SessionRestMapper sessionRestMapper;
-    private final SecurityContextService securityContextService;
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'PROFESOR')")
-    public ResponseEntity<SessionsPageResponse> getAuditSessions(
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'PROFESOR')")
+    public ResponseEntity<PageResponse<SessionAuditResponse>> getAuditSessions(
             @Valid @ModelAttribute GetSessionsRestRequest restRequest) {
-        String currentUserRole = securityContextService.getCurrentUserRole();
-        String currentUsername = securityContextService.getCurrentUsername();
-
-        log.info("User '{}' with role '{}' requesting audit sessions",
-                currentUsername, currentUserRole);
-
         GetSessionsRequest request = sessionRestMapper.toGetSessionsRequest(restRequest);
-
-        SessionsPageResponse response = getAuditSessionsQuery.execute(request);
-
-        log.debug("Returning {} sessions for user '{}'",
-                response.getSessions().size(), currentUsername);
-
+        PageResponse<SessionAuditResponse> response = getAuditSessionsQuery.execute(request);
         return ResponseEntity.ok(response);
     }
 
     @PostMapping("/export")
-    @PreAuthorize("hasAnyRole('ADMIN', 'DOCENTE', 'ESTUDIANTE')")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'PROFESOR')")
     public ResponseEntity<byte[]> exportAuditSessions(
             @Valid @RequestBody ExportSessionsRestRequest restRequest) {
 
@@ -67,7 +55,7 @@ public class AuditSessionController {
                 restRequest.getFormat(), restRequest.getDateFrom(), restRequest.getDateTo());
 
         ExportSessionsRequest request = sessionRestMapper.toExportSessionsRequest(restRequest);
-        ExportSessionsResponse response = exportAuditSessionsQuery.execute(request);
+        ExportFileResponse response = exportAuditSessionsQuery.execute(request);
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.parseMediaType(response.getContentType()));

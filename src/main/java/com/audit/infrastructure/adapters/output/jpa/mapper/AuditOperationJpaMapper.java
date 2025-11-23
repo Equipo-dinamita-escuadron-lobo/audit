@@ -1,0 +1,134 @@
+package com.audit.infrastructure.adapters.output.jpa.mapper;
+
+import java.time.ZoneId;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Component;
+
+import com.audit.domain.enums.OperationType;
+import com.audit.domain.exceptions.InvalidAuditEventException;
+import com.audit.domain.model.AuditOperation;
+import com.audit.domain.model.OperationData;
+import com.audit.infrastructure.adapters.output.jpa.entity.AuditOperationEntity;
+
+@Component
+public class AuditOperationJpaMapper {
+    
+    public AuditOperation toDomain(AuditOperationEntity entity) {
+        OperationData operationData = parseOperationData(
+                entity.getDataObject(),
+                entity.getOperationType().name());
+
+        return AuditOperation.reconstruct(
+                entity.getId(),
+                entity.getUserId(),
+                entity.getUserName(),
+                entity.getUserRole(),
+                entity.getOperationType(),
+                entity.getOperationAt().atZone(ZoneId.of("UTC")),
+                entity.getModuleName(),
+                entity.getAffectedTable(),
+                entity.getRegisterId(),
+                entity.getEnterpriseId(),
+                operationData,
+                entity.getCreatedAt().atZone(ZoneId.of("UTC")));
+    }
+
+    public AuditOperationEntity toEntity(AuditOperation domain) {
+        Map<String, Object> dataObjectMap = serializeOperationData(domain.getDataObject());
+
+        return AuditOperationEntity.builder()
+                .id(domain.getId())
+                .enterpriseId(domain.getEnterpriseId())
+                .userId(domain.getUserId())
+                .userName(domain.getUserName())
+                .userRole(domain.getUserRole())
+                .operationType(domain.getOperationType())
+                .operationAt(domain.getOperationAt().toInstant())
+                .moduleName(domain.getModuleName())
+                .affectedTable(domain.getAffectedTable())
+                .registerId(domain.getRegisterId())
+                .dataObject(dataObjectMap)
+                .createdAt(domain.getCreatedAt().toInstant())
+                .build();
+    } 
+
+    private OperationData parseOperationData(Map<String, Object> dataMap, String operationType) {
+        if (dataMap == null || dataMap.isEmpty()) {
+            throw new InvalidAuditEventException("Stored audit data cannot be null or empty");
+        }
+        OperationType type = OperationType.valueOf(operationType);
+        return switch (type) {
+            case CREATE -> parseEntityOperation(dataMap, OperationData::forCreate);
+            case DELETE -> parseEntityOperation(dataMap, OperationData::forDelete);
+            case INACTIVATE -> parseEntityOperation(dataMap, OperationData::forInactivate);
+            case UPDATE -> parseUpdateData(dataMap);
+        };
+    }
+
+    private OperationData parseEntityOperation(
+            Map<String, Object> dataMap,
+            Function<Map<String, Object>, OperationData> creator) {
+
+        Map<String, Object> entity = extractEntityData(dataMap);
+
+        if (entity == null || entity.isEmpty()) {
+            throw new InvalidAuditEventException("Entity data missing for operation");
+        }
+
+        return creator.apply(entity);
+    }
+
+    @SuppressWarnings("unchecked")
+    private OperationData parseUpdateData(Map<String, Object> dataMap) {
+        Map<String, Map<String, Object>> changesMap = (Map<String, Map<String, Object>>) dataMap.get("changes");
+
+        if (changesMap == null || changesMap.isEmpty()) {
+            throw new InvalidAuditEventException("Update operation must contain 'changes'");
+        }
+
+        Map<String, OperationData.FieldChange> fieldChanges = changesMap.entrySet().stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        Map.Entry::getKey,
+                        entry -> {
+                            Map<String, Object> changeData = entry.getValue();
+                            return OperationData.FieldChange.of(
+                                    changeData.get("before"),
+                                    changeData.get("after"));
+                        }));
+
+        return OperationData.forUpdate(fieldChanges);
+    }
+    
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> extractEntityData(Map<String, Object> dataMap) {
+        if (dataMap.containsKey("entity")) {
+            return (Map<String, Object>) dataMap.get("entity");
+        }
+        return dataMap;
+    }
+
+    private Map<String, Object> serializeOperationData(OperationData data) {
+        if (!data.getEntity().isEmpty()) {
+            return Map.of("entity", data.getEntity());
+        }
+
+        if (!data.getChanges().isEmpty()) {
+            Map<String, Object> changesMap =
+                    data.getChanges().entrySet().stream()
+                            .collect(Collectors.toMap(
+                                    Map.Entry::getKey,
+                                    e -> Map.of(
+                                            "before", e.getValue().getBefore(),
+                                            "after", e.getValue().getAfter()
+                                    )
+                            ));
+
+            return Map.of("changes", changesMap);
+        }
+
+        throw new InvalidAuditEventException("OperationData has no entity or changes");
+    }
+}

@@ -1,5 +1,6 @@
 package com.audit.infrastructure.config.rabbitConfig;
 
+import org.springframework.amqp.core.TopicExchange;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory;
@@ -10,8 +11,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 
-import lombok.extern.slf4j.Slf4j;
-
 /**
  * @brief Common RabbitMQ configuration for message handling
  * 
@@ -19,9 +18,10 @@ import lombok.extern.slf4j.Slf4j;
  *        conversion and listener container factory setup.
  */
 @Configuration
-@Slf4j
 @Profile("!test")
 public class RabbitCommonConfig {
+
+    public static final String AUDIT_EXCHANGE = "audit.exchange";
 
     /**
      * @brief Configures JSON message converter for RabbitMQ
@@ -47,5 +47,10 @@ public class RabbitCommonConfig {
         configurer.configure(factory, connectionFactory);
         factory.setMessageConverter(jsonMessageConverter());
         return factory;
+    }
+
+    @Bean
+    public TopicExchange auditExchange() {
+        return new TopicExchange(AUDIT_EXCHANGE, true, false);
     }
 }

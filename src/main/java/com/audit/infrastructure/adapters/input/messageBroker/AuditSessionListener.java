@@ -1,7 +1,6 @@
 package com.audit.infrastructure.adapters.input.messageBroker;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.support.AmqpHeaders;
 import org.springframework.stereotype.Component;
@@ -23,7 +22,6 @@ import org.springframework.messaging.handler.annotation.Header;
 
 @Component
 @RequiredArgsConstructor
-@Slf4j
 public class AuditSessionListener extends AbstractMessageListener<SessionEventDto> {
 
     private final LogAuditSessionCommand logAuditSessionPort;
@@ -47,7 +45,7 @@ public class AuditSessionListener extends AbstractMessageListener<SessionEventDt
     @Override
     protected void processEvent(SessionEventDto event) {
         LogSessionRequest request = sessionEventMapper.toRequest(event);
-        logAuditSessionPort.executeAsync(request);
+        logAuditSessionPort.execute(request);
     }
 
 
@@ -70,7 +68,7 @@ public class AuditSessionListener extends AbstractMessageListener<SessionEventDt
 
     @Override
     protected String extractEventType(SessionEventDto event) {
-        return event != null && event.getAction() != null ? event.getAction().name() : null;
+        return event != null && event.getAction() != null ? event.getAction() : null;
     }
 
 

@@ -5,7 +5,8 @@ import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
 
-import com.audit.application.dto.responses.SessionAuditResponse;
+import com.audit.application.dto.response.OperationAuditResponse;
+import com.audit.application.dto.response.SessionAuditResponse;
 import com.audit.application.port.output.FileExportService;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfWriter;
@@ -163,5 +164,11 @@ public class FileExportServiceImpl implements FileExportService {
         CellStyle style = workbook.createCellStyle();
         style.setAlignment(HorizontalAlignment.LEFT);
         return style;
+    }
+
+    @Override
+    public byte[] exportOperations(List<OperationAuditResponse> operations, String format) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'exportOperations'");
     }
 }

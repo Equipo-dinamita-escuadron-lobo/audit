@@ -7,7 +7,5 @@ import com.audit.application.dto.request.LogSessionRequest;
  */
 public interface LogAuditSessionCommand {
 
-    //LogSessionResponse executeSync(LogSessionRequest request);
-
-    void executeAsync(LogSessionRequest request);
+    void execute(LogSessionRequest request);
 }

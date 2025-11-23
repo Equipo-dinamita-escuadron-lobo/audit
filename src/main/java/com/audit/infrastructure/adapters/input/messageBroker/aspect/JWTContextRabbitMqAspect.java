@@ -8,8 +8,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.amqp.core.Message;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
-import com.audit.infrastructure.adapters.output.multitenancy.utils.TenantContext;
 import com.audit.infrastructure.adapters.output.security.JwtDecoder;
 import com.rabbitmq.client.LongString;
 
@@ -73,18 +71,12 @@ public class JWTContextRabbitMqAspect {
 
             // 2. Set the RabbitMQ context in the unified service
             jwtTokenService.setRabbitJwtToken(jwtToken);
-            jwtTokenService.setRabbitTenantId(tenantId);
-
-            // 3. Set the Tenant context for this thread
-            TenantContext.setTenantId(tenantId);
-            logger.info("Tenant context '{}' set for listener [{}].", tenantId, joinPoint.getSignature().getName());
 
             // 4. Execute the original listener method
             return joinPoint.proceed();
 
         } finally {
             logger.info("Clearing tenant context.");
-            TenantContext.clear();
             jwtTokenService.clearRabbitContext();
         }
     }

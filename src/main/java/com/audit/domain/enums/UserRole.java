@@ -1,7 +1,7 @@
 package com.audit.domain.enums;
 
 public enum UserRole {
-    ADMIN("Administrador"),
+    ADMINISTRADOR("Administrador"),
     PROFESOR("Profesor"),
     ESTUDIANTE("Estudiante");
 

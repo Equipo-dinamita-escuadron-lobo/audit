@@ -2,9 +2,10 @@ package com.audit.infrastructure.adapters.output.exception.handler;
 
 import com.audit.domain.exceptions.AuditDomainException;
 import com.audit.domain.exceptions.InvalidAuditEventException;
-import com.audit.domain.exceptions.InvalidTimestampException;
-import com.audit.domain.exceptions.InvalidUserDataException;
+
 import com.audit.infrastructure.adapters.output.exception.dto.ErrorResponseDto;
+import com.audit.infrastructure.adapters.output.exception.security.MisingHeaderException;
+import com.audit.infrastructure.adapters.output.exception.security.UnauthorizedException;
 
 import java.nio.file.AccessDeniedException;
 import java.time.ZonedDateTime;
@@ -25,47 +26,11 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(InvalidUserDataException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ErrorResponseDto handleInvalidUserDataException(
-        InvalidUserDataException ex,
-        WebRequest request
-    ) {
-        log.error("Invalid user data: {}", ex.getMessage());
-        return ErrorResponseDto.builder()
-                .timestamp(ZonedDateTime.now())
-                .status(HttpStatus.BAD_REQUEST.value())
-                .error("Bad Request")
-                .message(ex.getMessage())
-                .path(getPath(request))
-                .build();
-    }
-
     @ExceptionHandler(InvalidAuditEventException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErrorResponseDto handleInvalidAuditEventException(
             InvalidAuditEventException ex,
             WebRequest request) {
-
-        log.error("Invalid audit event: {}", ex.getMessage());
-
-        return ErrorResponseDto.builder()
-                .timestamp(ZonedDateTime.now())
-                .status(HttpStatus.BAD_REQUEST.value())
-                .error("Bad Request")
-                .message(ex.getMessage())
-                .path(getPath(request))
-                .build();
-    }
-
-    @ExceptionHandler(InvalidTimestampException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ErrorResponseDto handleInvalidTimeStampException(
-            InvalidTimestampException ex,
-            WebRequest request) {
-
-        log.error("Invalid timestamp: {}", ex.getMessage());
-
         return ErrorResponseDto.builder()
                 .timestamp(ZonedDateTime.now())
                 .status(HttpStatus.BAD_REQUEST.value())
@@ -80,9 +45,6 @@ public class GlobalExceptionHandler {
     public ErrorResponseDto handleAuditDomainException(
             AuditDomainException ex,
             WebRequest request) {
-
-        log.error("Domain exception: {}", ex.getMessage(), ex);
-
         return ErrorResponseDto.builder()
             .timestamp(ZonedDateTime.now())
             .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
@@ -97,9 +59,6 @@ public class GlobalExceptionHandler {
     public ErrorResponseDto handleValidationExceptions(
             MethodArgumentNotValidException ex,
             WebRequest request) {
-        
-        log.error("Validation error: {}", ex.getMessage());
-        
         Map<String, String> validationErrors = new HashMap<>();
         ex.getBindingResult().getAllErrors().forEach((error) -> {
             String fieldName = ((FieldError) error).getField();
@@ -122,9 +81,6 @@ public class GlobalExceptionHandler {
     public ErrorResponseDto handleAccessDeniedException(
             AccessDeniedException ex,
             WebRequest request) {
-
-        log.error("Access denied: {}", ex.getMessage());
-
         return ErrorResponseDto.builder()
             .timestamp(ZonedDateTime.now())
             .status(HttpStatus.FORBIDDEN.value())
@@ -140,7 +96,6 @@ public class GlobalExceptionHandler {
         IllegalArgumentException ex,
         WebRequest request
     ){
-        log.error("Illegal argument: {}", ex.getMessage());
         return ErrorResponseDto.builder()
             .timestamp(ZonedDateTime.now())
             .status(HttpStatus.BAD_REQUEST.value())
@@ -156,7 +111,6 @@ public class GlobalExceptionHandler {
         Exception ex, 
         WebRequest request
     ) {
-        log.error("Unexpected error: {}", ex.getMessage(), ex);
         return ErrorResponseDto.builder()
             .timestamp(ZonedDateTime.now())
             .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
@@ -168,5 +122,30 @@ public class GlobalExceptionHandler {
     
     private String getPath(WebRequest request) {
         return request.getDescription(false).replace("uri=", "");
+    }
+
+
+    @ExceptionHandler(MisingHeaderException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorResponseDto handleMissingHeaderException(MisingHeaderException ex, WebRequest request) {
+        return ErrorResponseDto.builder()
+                .timestamp(ZonedDateTime.now())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .error("Bad Request")
+                .message(ex.getMessage())
+                .path(getPath(request))
+                .build();
+    }
+
+    @ExceptionHandler(UnauthorizedException.class)
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    public ErrorResponseDto handleUnauthorizedException(UnauthorizedException ex, WebRequest request) {
+        return ErrorResponseDto.builder()
+                .timestamp(ZonedDateTime.now())
+                .status(HttpStatus.UNAUTHORIZED.value())
+                .error("Unauthorized")
+                .message(ex.getMessage())
+                .path(getPath(request))
+                .build();
     }
 }

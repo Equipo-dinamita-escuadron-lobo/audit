@@ -1,4 +1,4 @@
-package com.audit.application.dto.responses;
+package com.audit.application.dto.response;
 
 import java.util.List;
 
@@ -7,13 +7,14 @@ import lombok.Getter;
 
 @Getter
 @Builder
-public class SessionsPageResponse {
-    private List<SessionAuditResponse> sessions; 
+public class PageResponse<T> {
+
+    private List<T> data;
     private Long totalElements;
     private int totalPages;
     private int currentPage;
     private int pageSize;
     private boolean hasNext;
     private boolean hasPrevious;
-
+    
 }

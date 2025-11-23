@@ -2,22 +2,22 @@ package com.audit.application.usecases.queries;
 
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.audit.application.dto.request.ExportSessionsRequest;
-import com.audit.application.dto.responses.ExportSessionsResponse;
-import com.audit.application.dto.responses.SessionAuditResponse;
+import com.audit.application.dto.response.ExportFileResponse;
+import com.audit.application.dto.response.SessionAuditResponse;
 import com.audit.application.port.input.queries.ExportAuditSessionsQuery;
 import com.audit.application.port.output.FileExportService;
-import com.audit.domain.enums.UserAction;
-import com.audit.domain.model.AuditSession;
 import com.audit.domain.model.AuditSessionFilter;
+import com.audit.domain.model.CombinedSession;
 import com.audit.domain.model.PageResult;
 import com.audit.domain.port.output.AuditSessionRepositoryPort;
 
+@Service
 public class ExportAuditSessionsQueryImpl implements ExportAuditSessionsQuery {
 
     private static final int MAX_EXPORT_RECORDS = 10000;
@@ -30,7 +30,8 @@ public class ExportAuditSessionsQueryImpl implements ExportAuditSessionsQuery {
     }
 
     @Override
-    public ExportSessionsResponse execute(ExportSessionsRequest request) {
+    @Transactional(readOnly = true)
+    public ExportFileResponse execute(ExportSessionsRequest request) {
 
         AuditSessionFilter filter = AuditSessionFilter.builder()
                 .dateFrom(request.getDateFrom())
@@ -40,23 +41,33 @@ public class ExportAuditSessionsQueryImpl implements ExportAuditSessionsQuery {
                 .action(request.getAction())
                 .sortField(request.getSortField()) 
                 .sortDirection(request.getSortDirection())
+                .page(0)  // Para export siempre página 0
+                .size(MAX_EXPORT_RECORDS)  // Limitar al máximo de registros
+                .requestingUserRole(request.getRequestedBy())
                 .build();
 
-        PageResult<AuditSession> pageResult = auditSessionRepository.findPageByFilters(filter);
+        // Usar findCombinedSessions en lugar de findPageByFilters + combineLoginLogout
+        // Esto mueve la lógica de combinación a SQL, mucho más eficiente
+        PageResult<CombinedSession> pageResult = auditSessionRepository.findCombinedSessions(filter);
+        
         if (pageResult.getTotalElements() > MAX_EXPORT_RECORDS) {
             throw new IllegalArgumentException(
                     "Cannot export more than " + MAX_EXPORT_RECORDS + " records. " +
                             "Current query returns " + pageResult.getTotalElements() + " records.");
-        } 
-        List<SessionAuditResponse> combinedSessions = combineLoginLogout(pageResult.getContent());
+        }
+        
+        // Convertir directamente de CombinedSession a SessionAuditResponse
+        List<SessionAuditResponse> sessions = pageResult.getContent().stream()
+                .map(this::toResponse)
+                .toList();
 
-        byte[] fileContent = exportService.exportSessions(combinedSessions, request.getFormat());
+        byte[] fileContent = exportService.exportSessions(sessions, request.getFormat());
         String fileName = generateFileName(request.getFormat());
 
         if (request.getFormat().equalsIgnoreCase("PDF")) {
-            return ExportSessionsResponse.pdf(fileContent, fileName, combinedSessions.size());
+            return ExportFileResponse.pdf(fileContent, fileName, sessions.size());
         }
-        return ExportSessionsResponse.excel(fileContent, fileName, combinedSessions.size());
+        return ExportFileResponse.excel(fileContent, fileName, sessions.size());
     }
 
     private String generateFileName(String format) {
@@ -65,34 +76,13 @@ public class ExportAuditSessionsQueryImpl implements ExportAuditSessionsQuery {
         return "audit_sessions_" + timestamp + extension;
     }
 
-    private List<SessionAuditResponse> combineLoginLogout(List<AuditSession> sessions) {
-        Map<String, List<AuditSession>> sessionMap = sessions.stream()
-                .collect(Collectors.groupingBy(AuditSession::getSessionId));
-
-        List<SessionAuditResponse> result = new ArrayList<>();
-        for (Map.Entry<String, List<AuditSession>> entry : sessionMap.entrySet()) {
-            List<AuditSession> sessionEvents = entry.getValue();
-            AuditSession loginEvent = sessionEvents.stream()
-                    .filter(s -> s.getAction() == UserAction.LOGIN)
-                    .findFirst()
-                    .orElse(null);
-            AuditSession logoutEvent = sessionEvents.stream()
-                    .filter(s -> s.getAction() == UserAction.LOGOUT)
-                    .findFirst()
-                    .orElse(null);
-            
-            if (loginEvent != null) {
-                ZonedDateTime logoutTime = (logoutEvent != null) ? logoutEvent.getActionAt() : null;
-                SessionAuditResponse response = SessionAuditResponse.builder()
-                        .userName(loginEvent.getUserName())
-                        .userRole(loginEvent.getUserRole().name())
-                        .loginTime(loginEvent.getActionAt())
-                        .logoutTime(logoutTime)
-                        .build();
-                result.add(response);
-            }
-        }
-        return result;
+    private SessionAuditResponse toResponse(CombinedSession session) {
+        return SessionAuditResponse.builder()
+                .userName(session.getUserName())
+                .userRole(session.getUserRole().name())
+                .loginTime(session.getLoginTime())
+                .logoutTime(session.getLogoutTime())
+                .build();
     }
 
 }

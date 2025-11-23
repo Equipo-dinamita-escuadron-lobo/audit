@@ -1,9 +1,7 @@
 package com.audit.infrastructure.adapters.input.messageBroker.dto;
 
-import java.time.ZonedDateTime;
+import java.time.Instant;
 
-import com.audit.domain.enums.UserAction;
-import com.audit.domain.enums.UserRole;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import lombok.AllArgsConstructor;
@@ -11,14 +9,12 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import lombok.ToString;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@ToString
 public class SessionEventDto {
 
     @JsonProperty("session_id")
@@ -31,13 +27,13 @@ public class SessionEventDto {
     private String userName;
 
     @JsonProperty("user_role")
-    private UserRole userRole;
+    private String userRole;
 
     @JsonProperty("action")
-    private UserAction action;
+    private String action;
 
     @JsonProperty("action_at")
-    private ZonedDateTime actionAt;
+    private Instant actionAt;
 
     @JsonProperty("ip_address")
     private String ipAddress;

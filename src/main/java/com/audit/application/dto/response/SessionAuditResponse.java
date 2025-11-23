@@ -1,4 +1,4 @@
-package com.audit.application.dto.responses;
+package com.audit.application.dto.response;
 
 import java.time.ZonedDateTime;
 

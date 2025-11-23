@@ -15,13 +15,7 @@ public interface AuditSessionRepositoryPort {
 
     AuditSession save(AuditSession auditSession);
 
-    PageResult<AuditSession> findPageByFilters(AuditSessionFilter filter);
-
     PageResult<CombinedSession> findCombinedSessions(AuditSessionFilter filter);
 
-    Optional<AuditSession> findById(Long id);
-
     Optional<AuditSession> findBySessionId(String sessionId);
-
-    boolean existsActiveSession(String userId);
 }

@@ -7,7 +7,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: ${DB_HIBERNATE_DDL_AUTO:create-drop}
+      ddl-auto: ${DB_HIBERNATE_DDL_AUTO:update}
     properties:
       hibernate:
         dialect: ${DB_HIBERNATE_DIALECT:org.hibernate.dialect.PostgreSQLDialect}
@@ -61,6 +61,7 @@ logging:
   level:
     org:
       Keycloak: ${KEYCLOAK_LOG_LEVEL:DEBUG}
+      
 jwt:
   auth:
     converter:

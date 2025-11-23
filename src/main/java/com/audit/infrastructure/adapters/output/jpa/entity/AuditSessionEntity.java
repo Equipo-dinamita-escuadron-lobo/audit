@@ -1,6 +1,6 @@
 package com.audit.infrastructure.adapters.output.jpa.entity;
 
-import java.time.ZonedDateTime;
+import java.time.Instant;
 
 import com.audit.domain.enums.UserAction;
 import com.audit.domain.enums.UserRole;
@@ -12,6 +12,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -20,7 +21,13 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "audit_session")
+@Table(name = "audit_session", indexes = {
+        @Index(name = "idx_audit_action_date", columnList = "action, action_at DESC"),
+        @Index(name = "idx_audit_session_action", columnList = "session_id, action"),
+        @Index(name = "idx_audit_user_role", columnList = "user_role"),
+        @Index(name = "idx_audit_user_name", columnList = "user_name"),
+        @Index(name = "idx_audit_role_action_date", columnList = "action, user_role, action_at DESC")
+})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -50,12 +57,12 @@ public class AuditSessionEntity {
     private UserAction action;
 
     @Column(name = "action_at", nullable = false)
-    private ZonedDateTime actionAt;
+    private Instant actionAt;
 
     @Column(name = "ip_address", nullable = false, length = 45)
     private String ipAddress;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    private ZonedDateTime createdAt;
+    private Instant createdAt;
 
 }

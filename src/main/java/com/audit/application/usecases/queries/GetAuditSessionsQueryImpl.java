@@ -2,9 +2,11 @@ package com.audit.application.usecases.queries;
 
 import java.util.List;
 
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import com.audit.application.dto.request.GetSessionsRequest;
-import com.audit.application.dto.responses.SessionAuditResponse;
-import com.audit.application.dto.responses.SessionsPageResponse;
+import com.audit.application.dto.response.SessionAuditResponse;
+import com.audit.application.dto.response.PageResponse;
 import com.audit.application.port.input.queries.GetAuditSessionsQuery;
 
 import com.audit.domain.model.AuditSessionFilter;
@@ -16,7 +18,7 @@ import com.audit.domain.port.output.AuditSessionRepositoryPort;
  * @brief Use case implementation for querying audit sessions with multiple filters
  * Supports pagination and returns structured page response
  */
-
+@Service
 public class GetAuditSessionsQueryImpl implements GetAuditSessionsQuery {
     private final AuditSessionRepositoryPort auditSessionRepository;
 
@@ -25,7 +27,8 @@ public class GetAuditSessionsQueryImpl implements GetAuditSessionsQuery {
     }
 
     @Override
-    public SessionsPageResponse execute(GetSessionsRequest request) {
+    @Transactional(readOnly = true)
+    public PageResponse<SessionAuditResponse> execute(GetSessionsRequest request) {
 
         AuditSessionFilter filter = mapToFilter(request);
 
@@ -39,8 +42,8 @@ public class GetAuditSessionsQueryImpl implements GetAuditSessionsQuery {
             (double) pageResult.getTotalElements() / request.getSize()
         );
         
-        return SessionsPageResponse.builder()
-                .sessions(sessions)
+        return PageResponse.<SessionAuditResponse>builder()
+                .data(sessions)
                 .totalElements(pageResult.getTotalElements())
                 .totalPages(totalPages)
                 .currentPage(request.getPage())

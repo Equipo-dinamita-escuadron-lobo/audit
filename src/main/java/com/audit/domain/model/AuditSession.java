@@ -1,16 +1,13 @@
 package com.audit.domain.model;
 
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 
 import com.audit.domain.enums.UserAction;
 import com.audit.domain.enums.UserRole;
 import com.audit.domain.exceptions.InvalidAuditEventException;
-import com.audit.domain.exceptions.InvalidTimestampException;
-import com.audit.domain.exceptions.InvalidUserDataException;
 
 import lombok.Getter;
-
-import java.util.Objects;
 
 /**
  * @brief Domain model representing an audit session event (login/logout)
@@ -57,11 +54,12 @@ public class AuditSession {
         validateSessionAction(action);
         validateIPAddress(ipAddress);
         validateActionAt(actionAt);
+        validateSessionId(sessionId);
 
-        ZonedDateTime createdAt = ZonedDateTime.now();
+        ZonedDateTime now = ZonedDateTime.now(ZoneId.of("UTC"));
 
         return new AuditSession(null, sessionId, userId, userName, userRole, action, actionAt, ipAddress,
-                createdAt);
+                now);
     }
 
     /**
@@ -77,20 +75,26 @@ public class AuditSession {
 
     // Private validation methods
     private static void validateUserData(String userId, String userName, UserRole userRole) {
-        if (userId == null || userName.trim().isEmpty()) {
-            throw new InvalidUserDataException(userId, "User ID cannot be null or empty");
+        if (userId == null || userId.trim().isEmpty()) {
+            throw new InvalidAuditEventException("User ID cannot be null or empty");
         }
 
         if (userName == null || userName.trim().isEmpty()) {
-            throw new InvalidUserDataException(userId, "User name cannot be null or empty");
+            throw new InvalidAuditEventException("User name cannot be null or empty");
         }
 
         if (userName.trim().length() > 255) {
-            throw new InvalidUserDataException(userId, "User name cannot exceed 255 characters");
+            throw new InvalidAuditEventException("User name cannot exceed 255 characters");
         }
 
         if (userRole == null) {
-            throw new InvalidUserDataException(userId, "User role cannot be null");
+            throw new InvalidAuditEventException("User role cannot be null");
+        }
+    }
+
+    private static void validateSessionId(String sessionId) {
+        if (sessionId == null || sessionId.trim().isEmpty()) {
+            throw new InvalidAuditEventException("Session ID cannot be null or empty");
         }
     }
 
@@ -116,44 +120,10 @@ public class AuditSession {
 
     private static void validateActionAt(ZonedDateTime actionAt) {
         if (actionAt == null) {
-            throw new InvalidTimestampException("Action timestamp cannot be null");
+            throw new InvalidAuditEventException("Action timestamp cannot be null");
         }
         if (actionAt.isAfter(ZonedDateTime.now())) {
-            throw new InvalidTimestampException("Action timestamp cannot be in the future");
+            throw new InvalidAuditEventException("Action timestamp cannot be in the future");
         }
     }
-
-    // Business methods
-
-    public boolean isLoginAction() {
-        return this.action == UserAction.LOGIN;
-    }
-
-    public boolean isLogoutAction() {
-        return this.action == UserAction.LOGOUT;
-    }
-
-    public boolean belongsToUser(String userId) {
-        return Objects.equals(this.userId, userId);
-    }
-
-    // Overridden methods
-    @Override
-    public boolean equals(Object o) {
-        if (this == o)
-            return true;
-        if (o == null || getClass() != o.getClass())
-            return false;
-        AuditSession that = (AuditSession) o;
-        return Objects.equals(id, that.id) &&
-                Objects.equals(userId, that.userId) &&
-                Objects.equals(actionAt, that.actionAt) &&
-                Objects.equals(action, that.action);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(id, userId, actionAt, action);
-    }
-
 }

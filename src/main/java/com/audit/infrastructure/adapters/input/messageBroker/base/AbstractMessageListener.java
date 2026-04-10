@@ -1,7 +1,12 @@
 package com.audit.infrastructure.adapters.input.messageBroker.base;
 
+import java.util.Optional;
+
 import org.springframework.amqp.core.Message;
+
+import com.audit.domain.exceptions.InvalidAuditEventException;
 import com.audit.domain.port.messageProcessingError.IMessageErrorHandlingPort;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rabbitmq.client.Channel;
 
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +26,15 @@ public abstract class AbstractMessageListener<T> {
      */
     protected IMessageErrorHandlingPort messageErrorHandlingPort;
 
+    protected AbstractMessageListener(IMessageErrorHandlingPort messageErrorHandlingPort) {
+        this.messageErrorHandlingPort = messageErrorHandlingPort;
+    }
+
+    /**
+     * ObjectMapper para convertir eventos a JSON para almacenamiento de errores.
+     */
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
     /**
      * Método principal para manejar mensajes entrantes.
      * Implementa la lógica común de validación, procesamiento y acknowledgment.
@@ -28,18 +42,16 @@ public abstract class AbstractMessageListener<T> {
     protected void handleMessage(T event, Channel channel, long deliveryTag) {
         try {
             log.info("Received {} message from queue", getEntityType());
-
-            if (!isValidEvent(event)) {
-                log.warn("Invalid {} event received, saving error to database", getEntityType());
-                handleValidationError(event);
+            Optional<String> validationError = validateEvent(event);
+            if (validationError.isPresent()) {
+                log.warn("Invalid {} event: {}", getEntityType(), validationError.get());
+                handleValidationError(event, validationError.get());
                 acknowledgeMessage(channel, deliveryTag);
                 return;
             }
-
             processEvent(event);
             acknowledgeMessage(channel, deliveryTag);
             log.info("{} message processed successfully", getEntityType());
-
         } catch (Exception e) {
             handleProcessingError(e, event, channel, deliveryTag);
         }
@@ -53,7 +65,7 @@ public abstract class AbstractMessageListener<T> {
     /**
      * Valida si el evento es válido para procesamiento.
      */
-    protected abstract boolean isValidEvent(T event);
+    protected abstract Optional<String> validateEvent(T event);
 
     /**
      * Retorna el tipo de entidad que maneja este listener (para logging).
@@ -71,10 +83,10 @@ public abstract class AbstractMessageListener<T> {
             if (messageErrorHandlingPort != null) {
                 String eventType = extractEventType(event);
                 String messageData = convertEventToJson(event);
-                String errorDescription = String.format("Processing error: %s",
-                        e.getMessage());
-
-                messageErrorHandlingPort.saveProcessingError(eventType, errorDescription, messageData, getEntityType());
+                String errorDescription = buildErrorDescription(e);
+                String errorStage = resolveErrorStage(e);
+                messageErrorHandlingPort.saveProcessingError(eventType, errorDescription, messageData, getEntityType(),
+                        errorStage);
             }
 
             acknowledgeMessage(channel, deliveryTag); // ACK para evitar reenvío
@@ -83,23 +95,70 @@ public abstract class AbstractMessageListener<T> {
         }
     }
 
+    private String buildErrorDescription(Exception e) {
+        StringBuilder sb = new StringBuilder();
+
+        // Tipo de excepción
+        sb.append("[").append(e.getClass().getSimpleName()).append("] ");
+
+        // Mensaje principal
+        sb.append(e.getMessage() != null ? e.getMessage() : "No message");
+
+        // Causa raíz si existe y es diferente
+        Throwable cause = getRootCause(e);
+        if (cause != null && cause != e) {
+            sb.append(" | Caused by: [")
+                    .append(cause.getClass().getSimpleName())
+                    .append("] ")
+                    .append(cause.getMessage() != null ? cause.getMessage() : "No message");
+        }
+
+        // Primer frame relevante del stack (filtrando frameworks)
+        StackTraceElement[] stack = e.getStackTrace();
+        for (StackTraceElement frame : stack) {
+            if (frame.getClassName().startsWith("com.audit")) { // ajusta tu paquete base
+                sb.append(" | at ").append(frame.getClassName())
+                        .append(".").append(frame.getMethodName())
+                        .append(":").append(frame.getLineNumber());
+                break;
+            }
+        }
+
+        return sb.toString();
+    }
+
+    private Throwable getRootCause(Throwable t) {
+        Throwable cause = t.getCause();
+        while (cause != null && cause.getCause() != null) {
+            cause = cause.getCause();
+        }
+        return cause;
+    }
+
+    private String resolveErrorStage(Exception e) {
+        String exName = e.getClass().getSimpleName();
+        if (e instanceof InvalidAuditEventException || exName.contains("Validation"))
+            return "VALIDATION";
+        if (exName.contains("Mapping") || exName.contains("JsonMapping")
+                || exName.contains("JsonParse") || e instanceof IllegalArgumentException)
+            return "MAPPING";
+        if (exName.contains("DataAccess") || exName.contains("Persistence")
+                || exName.contains("Jpa") || exName.contains("Sql"))
+            return "PERSISTENCE";
+        return "UNKNOWN";
+    }
+
     /**
      * Maneja errores de validación de eventos.
      */
-    private void handleValidationError(T event) {
-        try {
-            if (messageErrorHandlingPort != null) {
-                String eventType = extractEventType(event);
-                String messageData = convertEventToJson(event);
-                String specificError = getValidationErrorMessage();
-                String errorDescription = specificError != null
-                        ? "Validation failed: " + specificError
-                        : "Validation failed: Required fields are missing or invalid";
-
-                messageErrorHandlingPort.saveProcessingError(eventType, errorDescription, messageData, getEntityType());
-            }
-        } catch (Exception e) {
-            log.error("Error saving validation error to database: {}", e.getMessage());
+    private void handleValidationError(T event, String reason) {
+        if (messageErrorHandlingPort != null) {
+            messageErrorHandlingPort.saveProcessingError(
+                    extractEventType(event),
+                    "Validation failed: " + reason,
+                    convertEventToJson(event),
+                    getEntityType(),
+                    "VALIDATION");
         }
     }
 
@@ -153,5 +212,14 @@ public abstract class AbstractMessageListener<T> {
      */
     protected String getValidationErrorMessage() {
         return null; // Implementación por defecto
+    }
+
+    protected boolean isValidJsonSize(Object data, int maxBytes) {
+        try {
+            String json = OBJECT_MAPPER.writeValueAsString(data);
+            return json.length() <= maxBytes;
+        } catch (Exception e) {
+            return false;
+        }
     }
 }

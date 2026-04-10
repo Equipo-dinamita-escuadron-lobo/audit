@@ -21,8 +21,8 @@ public class SessionRestMapper {
         String requestingUserRole = securityContextService.getCurrentUserRole();
 
         return GetSessionsRequest.builder()
-                .dateFrom(restRequest.getDateFrom())
-                .dateTo(restRequest.getDateTo())
+                .dateFrom(restRequest.getDateFrom().toInstant())
+                .dateTo(restRequest.getDateTo().toInstant())
                 .userName(restRequest.getUserName())
                 .userRole(restRequest.getUserRole())
                 .action(restRequest.getAction())
@@ -34,16 +34,19 @@ public class SessionRestMapper {
                 .build();
     }
 
-    public ExportSessionsRequest toExportSessionsRequest(ExportSessionsRestRequest restRequest) {
+    public ExportSessionsRequest toExportSessionsRequest(
+            ExportSessionsRestRequest restRequest, String format) {
+        String requestingUserRole = securityContextService.getCurrentUserRole();
         return ExportSessionsRequest.builder()
-                .dateFrom(restRequest.getDateFrom())
-                .dateTo(restRequest.getDateTo())
+                .dateFrom(restRequest.getDateFrom().toInstant())
+                .dateTo(restRequest.getDateTo().toInstant())
                 .userName(restRequest.getUserName())
                 .userRole(restRequest.getUserRole())
                 .action(restRequest.getAction())
-                .format(restRequest.getFormat())
+                .format(format) 
                 .sortField(restRequest.getSortField())
                 .sortDirection(restRequest.getSortDirection())
+                .requestedBy(requestingUserRole)
                 .build();
     }
 }

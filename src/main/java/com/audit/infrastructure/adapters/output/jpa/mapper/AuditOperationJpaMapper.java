@@ -1,6 +1,5 @@
 package com.audit.infrastructure.adapters.output.jpa.mapper;
 
-import java.time.ZoneId;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -27,13 +26,13 @@ public class AuditOperationJpaMapper {
                 entity.getUserName(),
                 entity.getUserRole(),
                 entity.getOperationType(),
-                entity.getOperationAt().atZone(ZoneId.of("UTC")),
+                entity.getOperationAt(),
                 entity.getModuleName(),
                 entity.getAffectedTable(),
                 entity.getRegisterId(),
                 entity.getEnterpriseId(),
                 operationData,
-                entity.getCreatedAt().atZone(ZoneId.of("UTC")));
+                entity.getCreatedAt());
     }
 
     public AuditOperationEntity toEntity(AuditOperation domain) {
@@ -46,12 +45,12 @@ public class AuditOperationJpaMapper {
                 .userName(domain.getUserName())
                 .userRole(domain.getUserRole())
                 .operationType(domain.getOperationType())
-                .operationAt(domain.getOperationAt().toInstant())
+                .operationAt(domain.getOperationAt())
                 .moduleName(domain.getModuleName())
                 .affectedTable(domain.getAffectedTable())
                 .registerId(domain.getRegisterId())
                 .dataObject(dataObjectMap)
-                .createdAt(domain.getCreatedAt().toInstant())
+                .createdAt(domain.getCreatedAt())
                 .build();
     } 
 
@@ -63,7 +62,8 @@ public class AuditOperationJpaMapper {
         return switch (type) {
             case CREATE -> parseEntityOperation(dataMap, OperationData::forCreate);
             case DELETE -> parseEntityOperation(dataMap, OperationData::forDelete);
-            case INACTIVATE -> parseEntityOperation(dataMap, OperationData::forInactivate);
+            case ACTIVATE -> parseUpdateData(dataMap);
+            case INACTIVATE -> parseUpdateData(dataMap);
             case UPDATE -> parseUpdateData(dataMap);
         };
     }

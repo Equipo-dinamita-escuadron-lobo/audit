@@ -1,8 +1,5 @@
 package com.audit.infrastructure.adapters.input.messageBroker.mapper;
 
-
-import java.time.ZoneId;
-
 import org.springframework.stereotype.Component;
 
 import com.audit.application.dto.request.LogSessionRequest;
@@ -21,7 +18,7 @@ public class SessionEventMapper {
                 .userName(sanitizeText(eventDto.getUserName()))
                 .userRole(parseUserRole(eventDto.getUserRole()))
                 .action(parseUserAction(eventDto.getAction()))
-                .actionAt(eventDto.getActionAt().atZone(ZoneId.of("UTC")))
+                .actionAt(eventDto.getActionAt())
                 .ipAddress(eventDto.getIpAddress())
                 .build();
     }

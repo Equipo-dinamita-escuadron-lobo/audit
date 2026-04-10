@@ -4,6 +4,7 @@ public enum OperationType {
     CREATE("Creación"),
     UPDATE("Actualización"),
     DELETE("Eliminación"),
+    ACTIVATE("Activación"),
     INACTIVATE("Inactivación");
 
     private final String description;

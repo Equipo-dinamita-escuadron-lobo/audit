@@ -1,6 +1,7 @@
 package com.audit.infrastructure.adapters.input.messageBroker;
 
 import java.util.Map;
+import java.util.Optional;
 
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.support.AmqpHeaders;
@@ -18,20 +19,18 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rabbitmq.client.Channel;
 
-import jakarta.annotation.PostConstruct;
-import lombok.RequiredArgsConstructor;
-
 @Component
-@RequiredArgsConstructor
 public class AuditOperationListener extends AbstractMessageListener<OperationEventDto> {
 
     private final LogAuditOperationCommand logOperationPort;
     private final OperationEventMapper operationEventMapper;
-    private final IMessageErrorHandlingPort messageErrorHandlingPortImpl;
 
-    @PostConstruct
-    private void init() {
-        this.messageErrorHandlingPort = messageErrorHandlingPortImpl;
+    public AuditOperationListener(LogAuditOperationCommand logOperationPort,
+            OperationEventMapper operationEventMapper,
+            IMessageErrorHandlingPort messageErrorHandlingPort) {
+        super(messageErrorHandlingPort);
+        this.logOperationPort = logOperationPort;
+        this.operationEventMapper = operationEventMapper;
     }
 
     @RabbitListener(queues = RabbitOperationConfig.OPERATION_AUDIT_QUEUE)
@@ -49,28 +48,36 @@ public class AuditOperationListener extends AbstractMessageListener<OperationEve
     }
 
     @Override
-    protected boolean isValidEvent(OperationEventDto event) {
-        return event != null
-                && event.getEnterpriseId() != null && !event.getEnterpriseId().trim().isEmpty()
-                && event.getUserId() != null && !event.getUserId().trim().isEmpty()
-                && event.getUserName() != null && !event.getUserName().trim().isEmpty()
-                && event.getUserRole() != null && !event.getUserRole().trim().isEmpty()
-                && event.getOperationType() != null && !event.getOperationType().trim().isEmpty()
-                && event.getOperationAt() != null
-                && event.getModuleName() != null && !event.getModuleName().trim().isEmpty()
-                && event.getAffectedTable() != null && !event.getAffectedTable().trim().isEmpty()
-                && event.getRegisterId() != null && !event.getRegisterId().trim().isEmpty()
-                && event.getDataObject() != null && !event.getDataObject().isEmpty()
-                && isValidDataObjectSize(event.getDataObject());
+    protected Optional<String> validateEvent(OperationEventDto event) {
+        if (event == null)
+            return Optional.of("event is null");
+        if (event.getEnterpriseId() == null || event.getEnterpriseId().isBlank())
+            return Optional.of("enterpriseId missing");
+        if (event.getUserId() == null || event.getUserId().isBlank())
+            return Optional.of("userId missing");
+        if (event.getUserName() == null || event.getUserName().isBlank())
+            return Optional.of("userName missing");
+        if (event.getUserRole() == null || event.getUserRole().isBlank())
+            return Optional.of("userRole missing");
+        if (event.getOperationType() == null || event.getOperationType().isBlank())
+            return Optional.of("operationType missing");
+        if (event.getOperationAt() == null)
+            return Optional.of("operationAt missing");
+        if (event.getModuleName() == null || event.getModuleName().isBlank())
+            return Optional.of("moduleName missing");
+        if (event.getAffectedTable() == null || event.getAffectedTable().isBlank())
+            return Optional.of("affectedTable missing");
+        if (event.getRegisterId() == null || event.getRegisterId().isBlank())
+            return Optional.of("registerId missing");
+        if (event.getDataObject() == null || event.getDataObject().isEmpty())
+            return Optional.of("dataObject missing");
+        if (!isValidDataObjectSize(event.getDataObject()))
+            return Optional.of("dataObject exceeds max size");
+        return Optional.empty();
     }
 
     private boolean isValidDataObjectSize(Map<String, Object> dataObject) {
-        try {
-            String json = new ObjectMapper().writeValueAsString(dataObject);
-            return json.length() <= 1_000_000;
-        } catch (Exception e) {
-            return false;
-        }
+        return isValidJsonSize(dataObject, 1_000_000);
     }
 
     @Override

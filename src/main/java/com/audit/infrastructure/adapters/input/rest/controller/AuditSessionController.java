@@ -38,7 +38,7 @@ public class AuditSessionController {
     private final SessionRestMapper sessionRestMapper;
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'PROFESOR')")
+    @PreAuthorize("hasAnyRole('Administrador', 'Profesor')")
     public ResponseEntity<PageResponse<SessionAuditResponse>> getAuditSessions(
             @Valid @ModelAttribute GetSessionsRestRequest restRequest) {
         GetSessionsRequest request = sessionRestMapper.toGetSessionsRequest(restRequest);
@@ -46,25 +46,31 @@ public class AuditSessionController {
         return ResponseEntity.ok(response);
     }
 
-    @PostMapping("/export")
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'PROFESOR')")
-    public ResponseEntity<byte[]> exportAuditSessions(
+    @PostMapping("/export_excel")
+    //@PreAuthorize("hasAuthority('Export_Excel_Audit_Sessions')")
+    @PreAuthorize("hasRole('Administrador')")
+    public ResponseEntity<byte[]> exportSessionsExcel(
             @Valid @RequestBody ExportSessionsRestRequest restRequest) {
-
-        log.info("POST /audit/sessions/export - Format: {}, Filters: dateFrom={}, dateTo={}",
-                restRequest.getFormat(), restRequest.getDateFrom(), restRequest.getDateTo());
-
-        ExportSessionsRequest request = sessionRestMapper.toExportSessionsRequest(restRequest);
+        ExportSessionsRequest request = sessionRestMapper.toExportSessionsRequest(restRequest, "EXCEL");
         ExportFileResponse response = exportAuditSessionsQuery.execute(request);
+        return buildFileResponse(response);
+    }
 
+    @PostMapping("/export_pdf")
+    //@PreAuthorize("hasAuthority('Export_PDF_Audit_Sessions')")
+    @PreAuthorize("hasRole('Administrador')")
+    public ResponseEntity<byte[]> exportSessionsPdf(
+            @Valid @RequestBody ExportSessionsRestRequest restRequest) {
+        ExportSessionsRequest request = sessionRestMapper.toExportSessionsRequest(restRequest, "PDF");
+        ExportFileResponse response = exportAuditSessionsQuery.execute(request);
+        return buildFileResponse(response);
+    }
+    
+    private ResponseEntity<byte[]> buildFileResponse(ExportFileResponse response) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.parseMediaType(response.getContentType()));
         headers.setContentDispositionFormData("attachment", response.getFileName());
         headers.setContentLength(response.getFileSize());
-
-        log.info("Export completed: fileName={}, records={}, format={}",
-                response.getFileName(), response.getTotalRecords(), response.getFormat());
-
         return new ResponseEntity<>(response.getFileContent(), headers, HttpStatus.OK);
     }
 }

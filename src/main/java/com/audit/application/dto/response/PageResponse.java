@@ -9,12 +9,12 @@ import lombok.Getter;
 @Builder
 public class PageResponse<T> {
 
-    private List<T> data;
-    private Long totalElements;
-    private int totalPages;
-    private int currentPage;
-    private int pageSize;
-    private boolean hasNext;
-    private boolean hasPrevious;
+    private final List<T> data;
+    private final Long totalElements;
+    private final int totalPages;
+    private final int currentPage;
+    private final int pageSize;
+    private final boolean hasNext;
+    private final boolean hasPrevious;
     
 }

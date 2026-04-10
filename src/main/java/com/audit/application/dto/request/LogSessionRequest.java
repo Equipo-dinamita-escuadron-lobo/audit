@@ -1,13 +1,12 @@
 package com.audit.application.dto.request;
 
-import java.time.ZonedDateTime;
+import java.time.Instant;
 
 import com.audit.domain.enums.UserAction;
 import com.audit.domain.enums.UserRole;
 
 import lombok.Builder;
 import lombok.Getter;
-import lombok.Setter;
 
 /**
  * @brief DTO for session event registration requests
@@ -15,7 +14,6 @@ import lombok.Setter;
  */
 
 @Getter
-@Setter
 @Builder
 public class LogSessionRequest {
     private String sessionId;
@@ -23,6 +21,6 @@ public class LogSessionRequest {
     private String userName;
     private UserRole userRole;
     private UserAction action;
-    private ZonedDateTime actionAt;
+    private Instant actionAt;
     private String ipAddress;
 }

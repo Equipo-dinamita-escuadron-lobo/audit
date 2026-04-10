@@ -1,6 +1,6 @@
 package com.audit.application.dto.response;
 
-import java.time.ZonedDateTime;
+import java.time.Instant;
 
 import lombok.Builder;
 import lombok.Getter;
@@ -15,7 +15,7 @@ public class ExportFileResponse {
     private long fileSize;
     private int totalRecords;
     private String format;
-    private ZonedDateTime generatedAt;
+    private Instant generatedAt;
 
     public static ExportFileResponse excel(byte[] content, String fileName, int recordCount) {
         return ExportFileResponse.builder()
@@ -25,7 +25,7 @@ public class ExportFileResponse {
                 .fileSize((long) content.length)
                 .totalRecords(recordCount)
                 .format("EXCEL")
-                .generatedAt(ZonedDateTime.now())
+                .generatedAt(Instant.now())
                 .build();
     }
 
@@ -37,7 +37,7 @@ public class ExportFileResponse {
                 .fileSize((long) content.length)
                 .totalRecords(recordCount)
                 .format("PDF")
-                .generatedAt(ZonedDateTime.now())
+                .generatedAt(Instant.now())
                 .build();
     }
 }

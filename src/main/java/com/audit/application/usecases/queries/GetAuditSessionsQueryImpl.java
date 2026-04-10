@@ -6,12 +6,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.audit.application.dto.request.GetSessionsRequest;
 import com.audit.application.dto.response.SessionAuditResponse;
+//import com.audit.application.internal.AccessValidator;
+import com.audit.application.internal.CombinedSession;
+import com.audit.application.internal.PageResult;
+import com.audit.application.internal.QueryOptions;
 import com.audit.application.dto.response.PageResponse;
 import com.audit.application.port.input.queries.GetAuditSessionsQuery;
-
-import com.audit.domain.model.AuditSessionFilter;
-import com.audit.domain.model.CombinedSession;
-import com.audit.domain.model.PageResult;
+import com.audit.domain.model.AuditSessionCriteria;
 import com.audit.domain.port.output.AuditSessionRepositoryPort;
 
 /**
@@ -30,27 +31,29 @@ public class GetAuditSessionsQueryImpl implements GetAuditSessionsQuery {
     @Transactional(readOnly = true)
     public PageResponse<SessionAuditResponse> execute(GetSessionsRequest request) {
 
-        AuditSessionFilter filter = mapToFilter(request);
+        //AccessValidator.validateSessionAccess(request.getRequestingUserRole());
 
-        PageResult<CombinedSession> pageResult = auditSessionRepository.findCombinedSessions(filter);
+        AuditSessionCriteria criteria = AuditSessionCriteria.create(
+                request.getDateFrom(),
+                request.getDateTo(),
+                request.getUserName(),
+                request.getUserRole(),
+                request.getAction());
 
-        List<SessionAuditResponse> sessions = pageResult.getContent().stream()
-            .map(this::toResponse)
-            .toList();
-
-        int totalPages = (int) Math.ceil(
-            (double) pageResult.getTotalElements() / request.getSize()
-        );
-        
-        return PageResponse.<SessionAuditResponse>builder()
-                .data(sessions)
-                .totalElements(pageResult.getTotalElements())
-                .totalPages(totalPages)
-                .currentPage(request.getPage())
-                .pageSize(request.getSize())
-                .hasNext(request.getPage() < totalPages - 1)
-                .hasPrevious(request.getPage() > 0)
+        QueryOptions options = QueryOptions.builder()
+                .page(request.getPage())
+                .size(request.getSize())
+                .sortField(request.getSortField())
+                .sortDirection(request.getSortDirection())
                 .build();
+
+        PageResult<CombinedSession> pageResult = auditSessionRepository.findCombinedSessions(criteria, options);
+
+        List<SessionAuditResponse> data = pageResult.getContent().stream()
+                .map(this::toResponse)
+                .toList();
+
+        return buildPageResponse(data, pageResult.getTotalElements(), request.getPage(), request.getSize());
     }
 
     private SessionAuditResponse toResponse(CombinedSession session) {
@@ -62,18 +65,17 @@ public class GetAuditSessionsQueryImpl implements GetAuditSessionsQuery {
                 .build();
     }
 
-    private AuditSessionFilter mapToFilter(GetSessionsRequest request) {
-        return AuditSessionFilter.builder()
-                .dateFrom(request.getDateFrom())
-                .dateTo(request.getDateTo())
-                .userName(request.getUserName())
-                .userRole(request.getUserRole())
-                .action(request.getAction())
-                .page(request.getPage())
-                .size(request.getSize())
-                .sortField(request.getSortField())
-                .sortDirection(request.getSortDirection())
-                .requestingUserRole(request.getRequestingUserRole())
+    private PageResponse<SessionAuditResponse> buildPageResponse(
+            List<SessionAuditResponse> data, long totalElements, int page, int size) {
+        int totalPages = totalElements == 0 ? 0 : (int) Math.ceil((double) totalElements / size);
+        return PageResponse.<SessionAuditResponse>builder()
+                .data(data)
+                .totalElements(totalElements)
+                .totalPages(totalPages)
+                .currentPage(page)
+                .pageSize(size)
+                .hasNext(page < totalPages - 1)
+                .hasPrevious(page > 0)
                 .build();
     }
     

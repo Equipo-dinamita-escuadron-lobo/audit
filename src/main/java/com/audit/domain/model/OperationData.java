@@ -36,14 +36,6 @@ public class OperationData {
         }
         return new OperationData(entity, null);
     }
-
-    public static OperationData forInactivate(Map<String, Object> entity) {
-        if (entity == null || entity.isEmpty()) {
-            throw new IllegalArgumentException("Entity data cannot be null or empty for INACTIVATE operation");
-        }
-        return new OperationData(entity, null);
-    }
-
     @Getter
     public static class FieldChange {
         private final Object before;

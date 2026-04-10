@@ -1,5 +1,7 @@
-package com.audit.domain.model;
+package com.audit.application.internal;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class PageResult<T> {
@@ -7,7 +9,7 @@ public class PageResult<T> {
     private final long totalElements;
 
     public PageResult(List<T> content, long totalElements) {
-        this.content = content;
+        this.content = Collections.unmodifiableList(new ArrayList<>(content));
         this.totalElements = totalElements;
     }
 

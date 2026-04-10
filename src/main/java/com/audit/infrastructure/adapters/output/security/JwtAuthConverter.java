@@ -2,11 +2,14 @@ package com.audit.infrastructure.adapters.output.security;
 
 import org.springframework.stereotype.Component;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
-
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -19,105 +22,77 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.lang.NonNull;
 
 /**
- * @brief JWT authentication converter for Spring Security
- * 
- * Converts JWT tokens to authentication objects with proper authority mapping
- * and principal extraction for OAuth2 resource server configuration.
+ * Clase que implementa la conversión de un JWT en un token de autenticación.
+ * También proporciona métodos utilitarios relacionados con JWT.
  */
 @Component
-public class JwtAuthConverter implements Converter<Jwt, AbstractAuthenticationToken>, IJwtUtils {
+@Slf4j
+public class JwtAuthConverter implements Converter<Jwt, AbstractAuthenticationToken> {
 
     private final JwtGrantedAuthoritiesConverter jwtGrantedAuthoritiesConverter = new JwtGrantedAuthoritiesConverter();
 
     @Value("${jwt.auth.converter.principle-attribute}")
-    private String principleAtrribute;
+    private String principleAttribute;
 
-    @Value("${jwt.auth.converter.resource-id}")
-    private String resourceId;
-
-    Jwt jwtToken;
-
-    /**
-     * @brief Converts a JWT into an AbstractAuthenticationToken for authentication
-     * @param jwt The JWT to convert
-     * @return The corresponding AbstractAuthenticationToken
-     */
     @Override
     public AbstractAuthenticationToken convert(@NonNull Jwt jwt) {
-
         Collection<GrantedAuthority> authorities = Stream
-                .concat(jwtGrantedAuthoritiesConverter.convert(jwt).stream(), 
-                        extractRealmRoles(jwt).stream())
+                .concat(
+                        jwtGrantedAuthoritiesConverter.convert(jwt).stream(),
+                        extractAuthorities(jwt).stream())
                 .toList();
 
-        this.jwtToken = jwt;
-
         return new JwtAuthenticationToken(jwt, authorities, getPrincipleName(jwt));
-
     }
 
-    /**
-     * @brief Returns the authenticated user's name from the JWT
-     * 
-     *        By default, uses the "sub" claim from the JWT, but can be configured
-     *        to use a different claim by setting the
-     *        "jwt.auth.converter.principle-attribute" property.
-     *
-     * @param jwt The JWT from which to extract the username
-     * @return The authenticated user's name
-     */
     private String getPrincipleName(Jwt jwt) {
-        String claimName = JwtClaimNames.SUB;
-
-        if (principleAtrribute != null) {
-            claimName = principleAtrribute;
-        }
-
+        String claimName = (principleAttribute != null) ? principleAttribute : JwtClaimNames.SUB;
         return jwt.getClaim(claimName);
     }
 
     /**
-     * @brief Extracts roles from the "resource_access" claim of the JWT
-     * 
-     *        Converts each role into a SimpleGrantedAuthority with "ROLE_" prefix.
-     *        If the "resource_access" claim or specific resource ID or its roles
-     *        are not present,
-     *        returns an empty collection.
-     * 
-     * @param jwt The JWT from which to extract roles
-     * @return A collection of GrantedAuthority representing the roles
+     * Extrae dos tipos de autoridades del JWT:
+     * 1. Roles de realm_access.roles → "ROLE_ADMINISTRADOR", "ROLE_PROFESOR", etc.
+     * Usados con hasAnyRole() en @PreAuthorize
+     * 2. rsname de authorization.permissions → "Export_Excel_Audit_Sessions", "HC",
+     * etc.
+     * Usados con hasAuthority() en @PreAuthorize
      */
     @SuppressWarnings("unchecked")
-    private Collection<? extends GrantedAuthority> extractRealmRoles(Jwt jwt) {
-        Map<String, Object> realmAccess = jwt.getClaim("realm_access");
+    private Collection<? extends GrantedAuthority> extractAuthorities(Jwt jwt) {
+        Set<GrantedAuthority> authorities = new HashSet<>();
 
-        if (realmAccess == null || realmAccess.get("roles") == null) {
-            return List.of();
+        // --- 1. Roles de realm_access ---
+        Map<String, Object> realmAccess = jwt.getClaim("realm_access");
+        if (realmAccess != null && realmAccess.containsKey("roles")) {
+            List<String> roles = (List<String>) realmAccess.get("roles");
+            for (String role : roles) {
+                if (role != null && !role.isBlank()) {
+                    // hasAnyRole("ADMINISTRADOR") busca "ROLE_ADMINISTRADOR"
+                    authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
+                    log.debug("Role extraído: ROLE_{}", role);
+                }
+            }
         }
 
-        Collection<String> realmRoles = (Collection<String>) realmAccess.get("roles");
+        // --- 2. Permisos de authorization.permissions (rsname) ---
+        Map<String, Object> authorization = jwt.getClaim("authorization");
+        if (authorization == null || !authorization.containsKey("permissions")) {
+            return authorities;
+        }
 
-        return realmRoles.stream()
-                .map(role -> new SimpleGrantedAuthority("ROLE_" + role.toUpperCase())) // ← Convertir a mayúsculas
-                .toList();
+        List<Map<String, Object>> permissions = (List<Map<String, Object>>) authorization.get("permissions");
+
+        for (Map<String, Object> permission : permissions) {
+            Object rsnameObj = permission.get("rsname");
+            if (!(rsnameObj instanceof String rsname) || rsname.isBlank()) {
+                continue;
+            }
+            authorities.add(new SimpleGrantedAuthority(rsname));
+            log.debug("Permiso extraído: {}", rsname);
+        }
+
+        return authorities;
     }
-
-    /**
-     * @brief Returns the "sub" claim value from the JWT
-     * @return The authenticated user's identifier
-     */
-    @Override
-    public String getId() {
-        return (String) jwtToken.getClaims().get("sub");
-    }
-
-    /**
-     * @brief Returns the JWT token value as a string
-     * @return The JWT token as a string
-     */
-    @Override
-    public String getToken() {
-        return jwtToken.getTokenValue();
-    }
-
 }
+

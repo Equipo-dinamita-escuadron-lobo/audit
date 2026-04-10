@@ -1,6 +1,6 @@
 package com.audit.application.dto.response;
 
-import java.time.ZonedDateTime;
+import java.time.Instant;
 
 import lombok.Builder;
 import lombok.Getter;
@@ -15,6 +15,6 @@ import lombok.Getter;
 public class SessionAuditResponse {
     private String userName;
     private String userRole;
-    private ZonedDateTime loginTime;
-    private ZonedDateTime logoutTime;
+    private Instant loginTime;
+    private Instant logoutTime;
 }

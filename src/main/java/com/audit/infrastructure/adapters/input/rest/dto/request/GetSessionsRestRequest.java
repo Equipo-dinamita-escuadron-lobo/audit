@@ -55,8 +55,8 @@ public class GetSessionsRestRequest implements DateRangeRequest {
     private Integer size = 20;
 
     @Builder.Default
-    @Pattern(regexp = "^(actionAt)$", message = "Invalid sort field")
-    private String sortField = "actionAt";
+    @Pattern(regexp = "^(loginTime|logoutTime|userName|userRole)$", message = "Sort field must be one of: loginTime, logoutTime, userName, userRole")
+    private String sortField = "loginTime";
 
     @Builder.Default
     @Pattern(regexp = "^(ASC|DESC)$", message = "Sort direction must be ASC or DESC")

@@ -17,8 +17,8 @@ import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.NoArgsConstructor;
 
 @Getter
 @Setter
@@ -64,7 +64,8 @@ public class GetOperationsRestRequest implements DateRangeRequest {
     private Integer size = 20;
 
     @Builder.Default
-    @Pattern(regexp = "^(operationAt)$", message = "Invalid sort field")
+    @Pattern(regexp = "^(operationAt|userName|userRole|operationType|moduleName|affectedTable)$", 
+            message = "Sort field must be one of: operationAt, userName, userRole, operationType, moduleName, affectedTable")
     private String sortField = "operationAt";
 
     @Builder.Default

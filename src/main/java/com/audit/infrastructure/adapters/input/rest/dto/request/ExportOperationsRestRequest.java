@@ -7,6 +7,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 
 import com.audit.domain.enums.OperationType;
 import com.audit.domain.enums.UserRole;
+import com.audit.infrastructure.adapters.input.rest.validation.ValidateRange;
 
 import java.time.ZonedDateTime;
 
@@ -15,7 +16,8 @@ import java.time.ZonedDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ExportOperationsRestRequest {
+@ValidateRange
+public class ExportOperationsRestRequest implements DateRangeRequest{
 
     @NotNull(message = "Date from is required")
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)

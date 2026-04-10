@@ -10,21 +10,21 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.JpaSort;
 import org.springframework.stereotype.Component;
 
+import com.audit.application.internal.CombinedSession;
+import com.audit.application.internal.PageResult;
+import com.audit.application.internal.QueryOptions;
+import com.audit.domain.enums.UserRole;
 import com.audit.domain.model.AuditSession;
-import com.audit.domain.model.AuditSessionFilter;
-import com.audit.domain.model.CombinedSession;
-import com.audit.domain.model.PageResult;
+import com.audit.domain.model.AuditSessionCriteria;
 import com.audit.domain.port.output.AuditSessionRepositoryPort;
 import com.audit.infrastructure.adapters.output.jpa.entity.AuditSessionEntity;
 import com.audit.infrastructure.adapters.output.jpa.mapper.AuditSessionJpaMapper;
 import com.audit.infrastructure.adapters.output.jpa.projection.SessionProjection;
 import com.audit.infrastructure.adapters.output.jpa.repository.IAuditSessionRepository;
 
-import java.time.Instant;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Component
 @RequiredArgsConstructor
@@ -48,19 +48,20 @@ public class AuditSessionRepositoryAdapter implements AuditSessionRepositoryPort
     }
 
     @Override
-    public PageResult<CombinedSession> findCombinedSessions(AuditSessionFilter filter) {
+    public PageResult<CombinedSession> findCombinedSessions(AuditSessionCriteria filter, QueryOptions options) {
         String sanitizedUserName = sanitizeUserName(filter.getUserName());
-        Sort sort = buildSortForNativeQuery(filter);
+        Sort sort = buildSortForNativeQuery(options);
         Pageable pageable = PageRequest.of(
-                filter.getPage(),
-                filter.getSize(),
+                options.getPage(),
+                options.getSize(),
                 sort);
         Page<SessionProjection> page = auditSessionRepository.findCombinedSessions(
                 filter.getDateFrom(),
                 filter.getDateTo(),
                 sanitizedUserName,
                 filter.getUserRole() != null ? filter.getUserRole().name() : null,
-                filter.getRequestingUserRole(),
+                options.getRequestingUserRole() != null
+                    ? options.getRequestingUserRole().name() : "NONE",
                 pageable);
         List<CombinedSession> sessions = page.getContent().stream()
                 .map(this::projectionToDomain)
@@ -68,29 +69,33 @@ public class AuditSessionRepositoryAdapter implements AuditSessionRepositoryPort
         return new PageResult<>(sessions, page.getTotalElements());
     }
 
-    private Sort buildSortForNativeQuery(AuditSessionFilter filter) {
+    private Sort buildSortForNativeQuery(QueryOptions options) {
+        String sortField = options.getSortField() != null ? options.getSortField() : "loginTime";
+        String sortDirection = options.getSortDirection() != null ? options.getSortDirection() : "DESC";
 
-        String sortDirection = filter.getSortDirection() != null ? filter.getSortDirection() : "DESC";
+        Set<String> allowedFields = Set.of("loginTime", "logoutTime", "userName", "userRole");
+        if (!allowedFields.contains(sortField)) {
+            sortField = "loginTime";
+        }
+
         if (!"ASC".equalsIgnoreCase(sortDirection) && !"DESC".equalsIgnoreCase(sortDirection)) {
             sortDirection = "DESC";
         }
+
         Sort.Direction direction = "ASC".equalsIgnoreCase(sortDirection)
                 ? Sort.Direction.ASC
                 : Sort.Direction.DESC;
 
-        return JpaSort.unsafe(direction, "loginTime");
+        return JpaSort.unsafe(direction, sortField);
     }
 
     private CombinedSession projectionToDomain(SessionProjection projection) {
-        ZonedDateTime loginTime = instantToZonedDateTime(projection.getLoginTime());
-        ZonedDateTime logoutTime = instantToZonedDateTime(projection.getLogoutTime());
-
-        return CombinedSession.reconstruct(
+        return CombinedSession.of(
                 projection.getSessionId(),
                 projection.getUserName(),
-                projection.getUserRole(),
-                loginTime,
-                logoutTime);
+                UserRole.valueOf(projection.getUserRole()),
+                projection.getLoginTime(), 
+                projection.getLogoutTime()); 
     }
 
     private String sanitizeUserName(String userName) {
@@ -105,10 +110,28 @@ public class AuditSessionRepositoryAdapter implements AuditSessionRepositoryPort
         return sanitized;
     }
 
-    private ZonedDateTime instantToZonedDateTime(Instant instant) {
-        if (instant == null) {
-            return null;
-        }
-        return instant.atZone(ZoneOffset.UTC);
+
+    @Override
+    public long countByCriteria(AuditSessionCriteria filter) {
+        return auditSessionRepository.countCombinedSessions(
+            filter.getDateFrom(),
+            filter.getDateTo(),
+            sanitizeUserName(filter.getUserName()),
+            filter.getUserRole() != null ? filter.getUserRole().name() : null, "NONE");
+    }
+
+    @Override
+    public List<CombinedSession> findForExport(AuditSessionCriteria criteria) {
+        Pageable pageable = PageRequest.of(0, 50000, Sort.by(Sort.Direction.DESC, "loginTime"));
+
+        return auditSessionRepository.findCombinedSessions(
+            criteria.getDateFrom(),
+            criteria.getDateTo(),
+            sanitizeUserName(criteria.getUserName()),
+            criteria.getUserRole() != null ? criteria.getUserRole().name() : null,
+            "NONE",
+            pageable).getContent().stream()
+            .map(this::projectionToDomain)
+            .toList();
     }
 }

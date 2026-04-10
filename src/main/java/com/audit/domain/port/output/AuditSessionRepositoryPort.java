@@ -1,11 +1,13 @@
 package com.audit.domain.port.output;
 
+import java.util.List;
 import java.util.Optional;
 
+import com.audit.application.internal.CombinedSession;
+import com.audit.application.internal.PageResult;
+import com.audit.application.internal.QueryOptions;
 import com.audit.domain.model.AuditSession;
-import com.audit.domain.model.AuditSessionFilter;
-import com.audit.domain.model.CombinedSession;
-import com.audit.domain.model.PageResult;
+import com.audit.domain.model.AuditSessionCriteria;
 
 /**
  * @brief Outbound port for session audit persistence
@@ -15,7 +17,11 @@ public interface AuditSessionRepositoryPort {
 
     AuditSession save(AuditSession auditSession);
 
-    PageResult<CombinedSession> findCombinedSessions(AuditSessionFilter filter);
-
     Optional<AuditSession> findBySessionId(String sessionId);
+
+    long countByCriteria(AuditSessionCriteria criteria);
+
+    PageResult<CombinedSession> findCombinedSessions(AuditSessionCriteria criteria, QueryOptions options);
+
+    List<CombinedSession> findForExport(AuditSessionCriteria criteria);
 }

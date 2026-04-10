@@ -37,6 +37,9 @@ public class MessageErrorEntity {
     @Column(name = "message_data", columnDefinition = "TEXT")
     private String messageData;
 
+    @Column(name = "error_stage")
+    private String errorStage;
+
     @Column(name = "error_at", nullable = false)
     private Instant errorAt;
 

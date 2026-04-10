@@ -1,6 +1,6 @@
 package com.audit.application.dto.response;
 
-import java.time.ZonedDateTime;
+import java.time.Instant;
 
 import com.audit.domain.model.OperationData;
 
@@ -13,7 +13,7 @@ public class OperationAuditResponse {
 
     private String userName;
     private String userRole;
-    private ZonedDateTime operationAt;
+    private Instant operationAt;
     private String moduleName;
     private String affectedTable;
     private String registerId;

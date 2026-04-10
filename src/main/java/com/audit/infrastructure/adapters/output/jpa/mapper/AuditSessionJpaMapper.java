@@ -1,6 +1,5 @@
 package com.audit.infrastructure.adapters.output.jpa.mapper;
 
-import java.time.ZoneId;
 
 import org.springframework.stereotype.Component;
 
@@ -18,9 +17,9 @@ public class AuditSessionJpaMapper {
                 entity.getUserName(),
                 entity.getUserRole(),
                 entity.getAction(),
-                entity.getActionAt().atZone(ZoneId.of("UTC")),
+                entity.getActionAt(),
                 entity.getIpAddress(),
-                entity.getCreatedAt().atZone(ZoneId.of("UTC")));
+                entity.getCreatedAt());
     }
 
     public AuditSessionEntity toEntity(AuditSession domain) {
@@ -31,9 +30,9 @@ public class AuditSessionJpaMapper {
                 .userName(domain.getUserName())
                 .userRole(domain.getUserRole())
                 .action(domain.getAction())
-                .actionAt(domain.getActionAt().toInstant())
+                .actionAt(domain.getActionAt())
                 .ipAddress(domain.getIpAddress())
-                .createdAt(domain.getCreatedAt().toInstant())
+                .createdAt(domain.getCreatedAt())
                 .build();
     }
 }

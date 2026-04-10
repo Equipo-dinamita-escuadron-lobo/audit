@@ -61,7 +61,7 @@ logging:
   level:
     org:
       Keycloak: ${KEYCLOAK_LOG_LEVEL:DEBUG}
-      
+
 jwt:
   auth:
     converter:

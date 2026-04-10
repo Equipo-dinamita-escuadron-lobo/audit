@@ -1,6 +1,5 @@
 package com.audit.infrastructure.adapters.input.messageBroker.mapper;
 
-import java.time.ZoneId;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -13,7 +12,10 @@ import com.audit.domain.exceptions.InvalidAuditEventException;
 import com.audit.domain.model.OperationData;
 import com.audit.infrastructure.adapters.input.messageBroker.dto.OperationEventDto;
 
+import lombok.extern.slf4j.Slf4j;
+
 @Component
+@Slf4j
 public class OperationEventMapper {
 
     public LogOperationRequest toRequest(OperationEventDto eventDto) {
@@ -23,7 +25,7 @@ public class OperationEventMapper {
                 .userName(sanitizeText(eventDto.getUserName()))
                 .userRole(parseUserRole(eventDto.getUserRole()))
                 .operationType(parseOperationType(eventDto.getOperationType()))
-                .operationAt(eventDto.getOperationAt().atZone(ZoneId.of("UTC")))
+                .operationAt(eventDto.getOperationAt())
                 .moduleName(sanitizeText(eventDto.getModuleName()))
                 .affectedTable(sanitizeText(eventDto.getAffectedTable()))
                 .registerId(sanitizeText(eventDto.getRegisterId()))
@@ -57,15 +59,23 @@ public class OperationEventMapper {
         if (dataMap == null || dataMap.isEmpty()) {
             throw new IllegalArgumentException("Data object cannot be null or empty");
         }
-
         OperationType opType = parseOperationType(operationType);
 
         return switch (opType) {
-            case CREATE -> OperationData.forCreate(dataMap);
+            case CREATE -> OperationData.forCreate(extractEntity(dataMap));
             case UPDATE -> parseUpdateData(dataMap);
-            case DELETE -> OperationData.forDelete(dataMap);
-            case INACTIVATE -> OperationData.forInactivate(dataMap);
+            case DELETE -> OperationData.forDelete(extractEntity(dataMap));
+            case ACTIVATE -> parseUpdateData(dataMap);
+            case INACTIVATE -> parseUpdateData(dataMap);
         };
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> extractEntity(Map<String, Object> dataMap) {
+        if (dataMap.containsKey("entity")) {
+            return (Map<String, Object>) dataMap.get("entity");
+        }
+        return dataMap;
     }
 
     @SuppressWarnings("unchecked")
@@ -94,7 +104,7 @@ public class OperationEventMapper {
             return null;
         String sanitized = input.trim()
                 .replaceAll("[\\n\\r\\t]", " ")
-                .replaceAll("[<>]", ""); 
+                .replaceAll("[<>]", "");
         return sanitized;
     }
 }

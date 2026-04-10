@@ -1,10 +1,12 @@
 package com.audit.infrastructure.adapters.output.exception.handler;
 
 import com.audit.domain.exceptions.AuditDomainException;
+import com.audit.domain.exceptions.ExportLimitExceededException;
 import com.audit.domain.exceptions.InvalidAuditEventException;
 
 import com.audit.infrastructure.adapters.output.exception.dto.ErrorResponseDto;
-import com.audit.infrastructure.adapters.output.exception.security.MisingHeaderException;
+import com.audit.infrastructure.adapters.output.exception.security.ExportException;
+import com.audit.infrastructure.adapters.output.exception.security.MissingHeaderException;
 import com.audit.infrastructure.adapters.output.exception.security.UnauthorizedException;
 
 import java.nio.file.AccessDeniedException;
@@ -125,9 +127,9 @@ public class GlobalExceptionHandler {
     }
 
 
-    @ExceptionHandler(MisingHeaderException.class)
+    @ExceptionHandler(MissingHeaderException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ErrorResponseDto handleMissingHeaderException(MisingHeaderException ex, WebRequest request) {
+    public ErrorResponseDto handleMissingHeaderException(MissingHeaderException ex, WebRequest request) {
         return ErrorResponseDto.builder()
                 .timestamp(ZonedDateTime.now())
                 .status(HttpStatus.BAD_REQUEST.value())
@@ -145,6 +147,31 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.UNAUTHORIZED.value())
                 .error("Unauthorized")
                 .message(ex.getMessage())
+                .path(getPath(request))
+                .build();
+    }
+
+    @ExceptionHandler(ExportLimitExceededException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorResponseDto handleExportLimitExceededException(
+            ExportLimitExceededException ex, WebRequest request) {
+        return ErrorResponseDto.builder()
+                .timestamp(ZonedDateTime.now())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .error("Export Limit Exceeded")
+                .message(ex.getMessage())
+                .path(getPath(request))
+                .build();
+    }
+
+    @ExceptionHandler(ExportException.class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public ErrorResponseDto handleExportException(ExportException ex, WebRequest request) {
+        return ErrorResponseDto.builder()
+                .timestamp(ZonedDateTime.now())
+                .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                .error("Export Error")
+                .message("Error generating export file. Please try again.")
                 .path(getPath(request))
                 .build();
     }

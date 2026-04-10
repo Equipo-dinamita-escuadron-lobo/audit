@@ -17,18 +17,20 @@ import lombok.extern.slf4j.Slf4j;
 public class MessageErrorHandlingAdapter implements IMessageErrorHandlingPort {
 
     private final IMessageErrorRepository messageRepository;
-    
+
     @Override
-    public void saveProcessingError(String eventType, String errorDescription, String messageData, String entityType) {
+    public void saveProcessingError(String eventType, String errorDescription, String messageData, String entityType,
+            String errorStage) {
         try {
             MessageErrorEntity error = MessageErrorEntity.builder()
-                .eventType(eventType)
-                .entityType(entityType)
-                .errorDescription(errorDescription)
-                .messageData(messageData)
-                .errorAt(Instant.now())
-                .build();
-            
+                    .eventType(eventType)
+                    .entityType(entityType)
+                    .errorDescription(errorDescription)
+                    .messageData(messageData)
+                    .errorAt(Instant.now())
+                    .errorStage(errorStage)
+                    .build();
+
             messageRepository.save(error);
             log.info("Error saved for entity type: {}, event type: {}", entityType, eventType);
 

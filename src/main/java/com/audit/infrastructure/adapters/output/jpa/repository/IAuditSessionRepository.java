@@ -1,6 +1,6 @@
 package com.audit.infrastructure.adapters.output.jpa.repository;
 
-import java.time.ZonedDateTime;
+import java.time.Instant;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
@@ -49,10 +49,28 @@ public interface IAuditSessionRepository
                 AND (:requestingRole != 'PROFESOR' OR user_role != 'ADMINISTRADOR')
             """, nativeQuery = true)
     Page<SessionProjection> findCombinedSessions(
-            @Param("dateFrom") ZonedDateTime dateFrom,
-            @Param("dateTo") ZonedDateTime dateTo,
+            @Param("dateFrom") Instant dateFrom,
+            @Param("dateTo") Instant dateTo,
             @Param("userName") String userName,
             @Param("userRole") String userRole,
             @Param("requestingRole") String requestingRole,
             Pageable pageable);
+
+    
+    @Query(value = """
+        SELECT COUNT(*)
+        FROM audit_session
+        WHERE action = 'LOGIN'
+            AND action_at >= :dateFrom
+            AND action_at <= :dateTo
+            AND (:userName IS NULL OR user_name ILIKE CONCAT(:userName, '%'))
+            AND (:userRole IS NULL OR user_role = CAST(:userRole AS text))
+            AND (:requestingRole != 'PROFESOR' OR user_role != 'ADMINISTRADOR')
+        """, nativeQuery = true)
+    long countCombinedSessions(
+        @Param("dateFrom") Instant dateFrom,
+        @Param("dateTo") Instant dateTo,
+        @Param("userName") String userName,
+        @Param("userRole") String userRole,
+        @Param("requestingRole") String requestingRole);
 }

@@ -1,20 +1,22 @@
 package com.audit.application.usecases.queries;
 
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.audit.application.dto.request.ExportOperationsRequest;
 import com.audit.application.dto.response.ExportFileResponse;
 import com.audit.application.dto.response.OperationAuditResponse;
+import com.audit.application.internal.ExportConstraints;
 import com.audit.application.port.input.queries.ExportAuditOperationsQuery;
 import com.audit.application.port.output.FileExportService;
 import com.audit.domain.model.AuditOperation;
-import com.audit.domain.model.AuditOperationFilter;
+import com.audit.domain.model.AuditOperationCriteria;
 import com.audit.domain.port.output.AuditOperationRepositoryPort;
-
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.List;
 
 @Service
 public class ExportAuditOperationsQueryImpl implements ExportAuditOperationsQuery {
@@ -22,7 +24,8 @@ public class ExportAuditOperationsQueryImpl implements ExportAuditOperationsQuer
     private final AuditOperationRepositoryPort auditOperationRepository;
     private final FileExportService exportService;
 
-    public ExportAuditOperationsQueryImpl(AuditOperationRepositoryPort auditOperationRepository, FileExportService exportService) {
+    public ExportAuditOperationsQueryImpl(AuditOperationRepositoryPort auditOperationRepository,
+            FileExportService exportService) {
         this.auditOperationRepository = auditOperationRepository;
         this.exportService = exportService;
     }
@@ -30,41 +33,35 @@ public class ExportAuditOperationsQueryImpl implements ExportAuditOperationsQuer
     @Override
     @Transactional(readOnly = true)
     public ExportFileResponse execute(ExportOperationsRequest request) {
-        
-        AuditOperationFilter filter = buildExportFilter(request);
 
-        List<AuditOperation> operations = auditOperationRepository.findPageByFilters(filter).getContent();
+        AuditOperationCriteria criteria = AuditOperationCriteria.create(
+                request.getDateFrom(),
+                request.getDateTo(),
+                request.getModuleName(),
+                request.getAffectedTable(),
+                request.getUserName(),
+                request.getUserRole(),
+                request.getOperationType(),
+                request.getRegisterId(),
+                request.getEnterpriseId());
 
-        List<OperationAuditResponse> operationResponses = operations.stream()
+        String format = request.getFormat().toUpperCase();
+        Long totalRecords = auditOperationRepository.countByCriteria(criteria);
+
+        ExportConstraints.validateExportable(totalRecords, format);
+
+        List<AuditOperation> operations = auditOperationRepository.findForExport(criteria);
+
+        List<OperationAuditResponse> data = operations.stream()
                 .map(this::toResponse)
                 .toList();
 
-        byte[] fileContent = exportService.exportOperations(operationResponses, "EXCEL");
-        String fileName = generateFileName(request.getEnterpriseId());
+        byte[] fileContent = exportService.exportOperations(data, format);
 
-        return ExportFileResponse.excel(fileContent, fileName, operations.size());
+        return buildResponse(fileContent, format, data.size());
     }
 
-    private AuditOperationFilter buildExportFilter(ExportOperationsRequest request) {
-        return AuditOperationFilter.builder()
-                .dateFrom(request.getDateFrom())
-                .dateTo(request.getDateTo())
-                .moduleName(request.getModuleName())
-                .affectedTable(request.getAffectedTable())
-                .userName(request.getUserName())
-                .userRole(request.getUserRole())
-                .operationType(request.getOperationType())
-                .registerId(request.getRegisterId())
-                .enterpriseId(request.getEnterpriseId())
-                .sortField(request.getSortField())
-                .sortDirection(request.getSortDirection())
-                .requestingUserRole(request.getRequestingUserRole())
-                .page(null) 
-                .size(null) 
-                .build();
-    }
-
-    private OperationAuditResponse toResponse(AuditOperation operation) {
+    public OperationAuditResponse toResponse(AuditOperation operation) {
         return OperationAuditResponse.builder()
                 .userName(operation.getUserName())
                 .userRole(operation.getUserRole().name())
@@ -77,9 +74,12 @@ public class ExportAuditOperationsQueryImpl implements ExportAuditOperationsQuer
                 .build();
     }
 
-    private String generateFileName(String enterpriseId) {
-        String timestamp = ZonedDateTime.now()
+    private ExportFileResponse buildResponse(byte[] fileContent, String format, int recordCount) {
+        String timestamp = Instant.now()
+                .atZone(ZoneId.of("America/Bogota"))
                 .format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
-        return String.format("auditoria_operaciones_empresa_%s_%s.xlsx", enterpriseId, timestamp);
+        String fileName = "audit_operations_" + timestamp +  ".xlsx";
+        return ExportFileResponse.excel(fileContent, fileName, recordCount);
     }
+
 }

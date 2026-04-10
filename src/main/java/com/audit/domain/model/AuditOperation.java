@@ -1,7 +1,6 @@
 package com.audit.domain.model;
 
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
+import java.time.Instant;
 
 import com.audit.domain.enums.OperationType;
 import com.audit.domain.enums.UserRole;
@@ -18,19 +17,19 @@ public class AuditOperation {
     private final String userName;
     private final UserRole userRole;
     private final OperationType operationType;
-    private final ZonedDateTime operationAt;
+    private final Instant operationAt;
     private final String moduleName;
     private final String affectedTable;
     private final String registerId;
     private final String enterpriseId;
     private final OperationData dataObject;
-    private final ZonedDateTime createdAt;
+    private final Instant createdAt;
 
     // Constructor
     private AuditOperation(Long id, String userId, String userName, UserRole userRole, OperationType operationType,
-            ZonedDateTime operationAt, String moduleName, String affectedTable, String registerId, String enterpriseId,
+            Instant operationAt, String moduleName, String affectedTable, String registerId, String enterpriseId,
             OperationData dataObject,
-            ZonedDateTime createdAt) {
+            Instant createdAt) {
         this.id = id;
         this.userId = userId;
         this.userName = userName;
@@ -47,7 +46,7 @@ public class AuditOperation {
 
     // Factory method
     public static AuditOperation create(String userId, String userName, UserRole userRole,
-            OperationType operationType, ZonedDateTime operationAt, String moduleName, String affectedTable,
+            OperationType operationType, Instant operationAt, String moduleName, String affectedTable,
             String registerId, String enterpriseId,OperationData dataObject){
         validateEnterpriseId(enterpriseId);
         validateUserData(userId, userName, userRole);
@@ -55,16 +54,15 @@ public class AuditOperation {
         validateModuleName(moduleName);
         validateOperationAt(operationAt);
 
-        ZonedDateTime now = ZonedDateTime.now(ZoneId.of("UTC"));
-        validateTimestamp(now);
+        Instant now = Instant.now();
 
         return new AuditOperation(null, userId, userName, userRole, operationType, operationAt, moduleName,
                 affectedTable, registerId, enterpriseId, dataObject, now);
     }
 
     public static AuditOperation reconstruct(Long id, String userId, String userName, UserRole userRole,
-            OperationType operationType, ZonedDateTime operationAt, String moduleName, String affectedTable, String registerId, String enterpriseId,
-            OperationData dataObject, ZonedDateTime createdAt) {
+            OperationType operationType, Instant operationAt, String moduleName, String affectedTable, String registerId, String enterpriseId,
+            OperationData dataObject, Instant createdAt) {
         return new AuditOperation(id, userId, userName, userRole, operationType,
                 operationAt, moduleName, affectedTable, registerId, enterpriseId, dataObject, createdAt);
     }
@@ -108,46 +106,27 @@ public class AuditOperation {
             throw new InvalidAuditEventException("Data object cannot be null");
         }
         switch (operationType) {
-            case CREATE:
-            case DELETE:
-            case INACTIVATE:
-                if (dataObject.getEntity().isEmpty()) {
+            case CREATE, DELETE -> {
+                if (dataObject.getEntity().isEmpty())
                     throw new InvalidAuditEventException(operationType + " requires entity data");
-                }
-                if (!dataObject.getChanges().isEmpty()) {
-                    throw new InvalidAuditEventException(operationType + " cannot contain changes");
-                }
-                break;
-
-            case UPDATE:
-                if (dataObject.getChanges().isEmpty()) {
-                    throw new InvalidAuditEventException("UPDATE requires change data");
-                }
-                if (!dataObject.getEntity().isEmpty()) {
-                    throw new InvalidAuditEventException("UPDATE cannot contain entity data");
-                }
-                break;
-
-            default:
-                throw new InvalidAuditEventException("Unsupported operation type: " + operationType);
+                if (!dataObject.getChanges().isEmpty())
+                    throw new InvalidAuditEventException(operationType + " cannot contain entity data");
+            }
+            case UPDATE, ACTIVATE, INACTIVATE -> {
+                if (dataObject.getChanges().isEmpty())
+                    throw new InvalidAuditEventException(operationType + " requires change data");
+                if (!dataObject.getEntity().isEmpty())
+                    throw new InvalidAuditEventException(operationType + " cannot contain entity data");
+            }
         }
     }
 
-    private static void validateOperationAt(ZonedDateTime operationAt) {
+    private static void validateOperationAt(Instant operationAt) {
         if (operationAt == null) {
             throw new InvalidAuditEventException("Operation timestamp cannot be null");
         }
-        if (operationAt.isAfter(ZonedDateTime.now().plusMinutes(5))) {
+        if (operationAt.isAfter(Instant.now().plusSeconds(300))) {
             throw new InvalidAuditEventException("Operation timestamp cannot be in the future");
-        }
-    }
-
-    private static void validateTimestamp(ZonedDateTime timestamp) {
-        if (timestamp == null) {
-            throw new InvalidAuditEventException("null");
-        }
-        if (timestamp.isAfter(ZonedDateTime.now().plusMinutes(5))) {
-            throw new InvalidAuditEventException(timestamp.toString());
         }
     }
 }

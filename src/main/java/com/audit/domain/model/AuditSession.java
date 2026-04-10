@@ -1,7 +1,6 @@
 package com.audit.domain.model;
 
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
+import java.time.Instant;
 
 import com.audit.domain.enums.UserAction;
 import com.audit.domain.enums.UserRole;
@@ -22,16 +21,16 @@ public class AuditSession {
     private final String userName;
     private final UserRole userRole;
     private final UserAction action;
-    private final ZonedDateTime actionAt;
+    private final Instant actionAt;
     private final String ipAddress;
-    private final ZonedDateTime createdAt;
+    private final Instant createdAt;
 
     // Constructor
     /**
      * Private constructor to enforce the use of the factory method
      */
     private AuditSession(Long id, String sessionId, String userId, String userName, UserRole userRole, UserAction action,
-            ZonedDateTime actionAt, String ipAddress, ZonedDateTime createdAt) {
+            Instant actionAt, String ipAddress, Instant createdAt) {
         this.id = id;
         this.sessionId = sessionId;
         this.userId = userId;
@@ -48,7 +47,7 @@ public class AuditSession {
      * Factory method to create a new AuditSession instance with validation
      */
     public static AuditSession create(String sessionId, String userId, String userName, UserRole userRole, UserAction action,
-            ZonedDateTime actionAt, String ipAddress) {
+            Instant actionAt, String ipAddress) {
 
         validateUserData(userId, userName, userRole);
         validateSessionAction(action);
@@ -56,7 +55,7 @@ public class AuditSession {
         validateActionAt(actionAt);
         validateSessionId(sessionId);
 
-        ZonedDateTime now = ZonedDateTime.now(ZoneId.of("UTC"));
+        Instant now = Instant.now();
 
         return new AuditSession(null, sessionId, userId, userName, userRole, action, actionAt, ipAddress,
                 now);
@@ -67,7 +66,7 @@ public class AuditSession {
      */
     public static AuditSession reconstruct(Long id, String sessionId, String userId, String userName, UserRole userRole,
             UserAction action,
-            ZonedDateTime actionAt, String ipAddress, ZonedDateTime createdAt) {
+            Instant actionAt, String ipAddress, Instant createdAt) {
 
         return new AuditSession(id, sessionId, userId, userName, userRole, action, actionAt, ipAddress,
                 createdAt);
@@ -99,9 +98,6 @@ public class AuditSession {
     }
 
     private static void validateSessionAction(UserAction action) {
-        if (action == null) {
-            throw new InvalidAuditEventException("Session action cannot be null");
-        }
         if (action != UserAction.LOGIN && action != UserAction.LOGOUT) {
             throw new InvalidAuditEventException(
                     String.format("Invalid session action: %s. Only LOGIN and LOGOUT are allowed.", action));
@@ -118,11 +114,11 @@ public class AuditSession {
         }
     }
 
-    private static void validateActionAt(ZonedDateTime actionAt) {
+    private static void validateActionAt(Instant actionAt) {
         if (actionAt == null) {
             throw new InvalidAuditEventException("Action timestamp cannot be null");
         }
-        if (actionAt.isAfter(ZonedDateTime.now())) {
+        if (actionAt.isAfter(Instant.now())) {
             throw new InvalidAuditEventException("Action timestamp cannot be in the future");
         }
     }

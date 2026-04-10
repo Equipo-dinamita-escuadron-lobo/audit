@@ -107,4 +107,24 @@ public class SecurityContextService {
 
         throw new SecurityException("Authentication is not JWT-based");
     }
+
+    /**
+     * Retorna el token JWT como string puro
+     */
+    public String getToken() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication instanceof JwtAuthenticationToken jwtAuth) {
+            return jwtAuth.getToken().getTokenValue();
+        }
+
+        throw new SecurityException("No JWT token found in security context");
+    }
+
+    /**
+     * Retorna el token JWT con prefijo "Bearer "
+     */
+    public String getTokenWithBearer() {
+        return "Bearer " + getToken();
+    }
 }

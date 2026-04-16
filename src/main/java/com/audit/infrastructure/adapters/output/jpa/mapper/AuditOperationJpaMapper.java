@@ -1,5 +1,6 @@
 package com.audit.infrastructure.adapters.output.jpa.mapper;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -14,7 +15,7 @@ import com.audit.infrastructure.adapters.output.jpa.entity.AuditOperationEntity;
 
 @Component
 public class AuditOperationJpaMapper {
-    
+
     public AuditOperation toDomain(AuditOperationEntity entity) {
         OperationData operationData = parseOperationData(
                 entity.getDataObject(),
@@ -52,7 +53,7 @@ public class AuditOperationJpaMapper {
                 .dataObject(dataObjectMap)
                 .createdAt(domain.getCreatedAt())
                 .build();
-    } 
+    }
 
     private OperationData parseOperationData(Map<String, Object> dataMap, String operationType) {
         if (dataMap == null || dataMap.isEmpty()) {
@@ -99,9 +100,15 @@ public class AuditOperationJpaMapper {
                                     changeData.get("after"));
                         }));
 
-        return OperationData.forUpdate(fieldChanges);
+        Map<String, Object> context = null;
+        if (dataMap.containsKey("context")) {
+            context = (Map<String, Object>) dataMap.get("context");
+        }
+        return context != null && !context.isEmpty()
+                ? OperationData.forUpdate(context, fieldChanges)
+                : OperationData.forUpdate(fieldChanges);
     }
-    
+
     @SuppressWarnings("unchecked")
     private Map<String, Object> extractEntityData(Map<String, Object> dataMap) {
         if (dataMap.containsKey("entity")) {
@@ -116,16 +123,18 @@ public class AuditOperationJpaMapper {
         }
 
         if (!data.getChanges().isEmpty()) {
-            Map<String, Object> changesMap =
-                    data.getChanges().entrySet().stream()
-                            .collect(Collectors.toMap(
-                                    Map.Entry::getKey,
-                                    e -> Map.of(
-                                            "before", e.getValue().getBefore(),
-                                            "after", e.getValue().getAfter()
-                                    )
-                            ));
-
+            Map<String, Object> changesMap = data.getChanges().entrySet().stream()
+                    .collect(Collectors.toMap(
+                            Map.Entry::getKey,
+                            e -> Map.of(
+                                    "before", e.getValue().getBefore(),
+                                    "after", e.getValue().getAfter())));
+            if (!data.getContext().isEmpty()) {
+                Map<String, Object> result = new LinkedHashMap<>();
+                result.put("context", data.getContext());
+                result.put("changes", changesMap);
+                return result;
+            }
             return Map.of("changes", changesMap);
         }
 

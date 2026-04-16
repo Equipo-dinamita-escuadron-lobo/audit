@@ -96,7 +96,13 @@ public class OperationEventMapper {
                                     changeData.get("after"));
                         }));
 
-        return OperationData.forUpdate(fieldChanges);
+        Map<String, Object> context = null;
+        if (dataMap.containsKey("context")) {
+            context = (Map<String, Object>) dataMap.get("context");
+        }
+        return context != null && !context.isEmpty()
+                ? OperationData.forUpdate(context, fieldChanges)
+                : OperationData.forUpdate(fieldChanges);
     }
 
     private String sanitizeText(String input) {

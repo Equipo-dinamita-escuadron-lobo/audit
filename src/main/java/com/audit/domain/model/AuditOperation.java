@@ -47,7 +47,7 @@ public class AuditOperation {
     // Factory method
     public static AuditOperation create(String userId, String userName, UserRole userRole,
             OperationType operationType, Instant operationAt, String moduleName, String affectedTable,
-            String registerId, String enterpriseId,OperationData dataObject){
+            String registerId, String enterpriseId, OperationData dataObject) {
         validateEnterpriseId(enterpriseId);
         validateUserData(userId, userName, userRole);
         validateOperationData(operationType, affectedTable, registerId, dataObject);
@@ -61,7 +61,8 @@ public class AuditOperation {
     }
 
     public static AuditOperation reconstruct(Long id, String userId, String userName, UserRole userRole,
-            OperationType operationType, Instant operationAt, String moduleName, String affectedTable, String registerId, String enterpriseId,
+            OperationType operationType, Instant operationAt, String moduleName, String affectedTable,
+            String registerId, String enterpriseId,
             OperationData dataObject, Instant createdAt) {
         return new AuditOperation(id, userId, userName, userRole, operationType,
                 operationAt, moduleName, affectedTable, registerId, enterpriseId, dataObject, createdAt);
@@ -78,7 +79,7 @@ public class AuditOperation {
             throw new InvalidAuditEventException("Module name cannot be null or empty");
         }
     }
-    
+
     private static void validateUserData(String userId, String userName, UserRole userRole) {
         if (userId == null || userId.isBlank()) {
             throw new InvalidAuditEventException("User ID cannot be null or empty");
@@ -115,8 +116,6 @@ public class AuditOperation {
             case UPDATE, ACTIVATE, INACTIVATE -> {
                 if (dataObject.getChanges().isEmpty())
                     throw new InvalidAuditEventException(operationType + " requires change data");
-                if (!dataObject.getEntity().isEmpty())
-                    throw new InvalidAuditEventException(operationType + " cannot contain entity data");
             }
         }
     }

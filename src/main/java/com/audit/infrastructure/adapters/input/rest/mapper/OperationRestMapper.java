@@ -3,6 +3,7 @@ package com.audit.infrastructure.adapters.input.rest.mapper;
 import org.springframework.stereotype.Component;
 
 import com.audit.application.dto.request.ExportOperationsRequest;
+import com.audit.application.dto.request.GetModulesTablesRequest;
 import com.audit.application.dto.request.GetOperationsRequest;
 import com.audit.infrastructure.adapters.input.rest.dto.request.ExportOperationsRestRequest;
 import com.audit.infrastructure.adapters.input.rest.dto.request.GetOperationsRestRequest;
@@ -23,13 +24,13 @@ public class OperationRestMapper {
     public GetOperationsRequest toGetOperationsRequest(
             GetOperationsRestRequest restRequest,
             HttpServletRequest httpServletRequest) {
-        //Estos dos datos se extraen de la cabecera que es enviada desde el front 
-        //Estrae el enterpriseId del header para filtrar por empresa
+        // Estos dos datos se extraen de la cabecera que es enviada desde el front
+        // Estrae el enterpriseId del header para filtrar por empresa
         String enterpriseId = httpServletRequest.getHeader("X-Enterprise-Id");
         if (enterpriseId == null || enterpriseId.isBlank()) {
             throw new MissingHeaderException("X-Enterprise-Id header is required");
         }
-        //Estrae el rol del usuario para saber si puede consultar esa informacion
+        // Estrae el rol del usuario para saber si puede consultar esa informacion
         String requestingUserRole = securityContextService.getCurrentUserRole();
         return GetOperationsRequest.builder()
                 .dateFrom(restRequest.getDateFrom().toInstant())
@@ -73,5 +74,13 @@ public class OperationRestMapper {
                 .sortDirection(restRequest.getSortDirection())
                 .requestingUserRole(requestingUserRole)
                 .build();
+    }
+
+    public GetModulesTablesRequest toGetModulesTablesRequest(HttpServletRequest httpServletRequest) {
+        String enterpriseId = httpServletRequest.getHeader("X-Enterprise-Id");
+        if (enterpriseId == null || enterpriseId.isBlank()) {
+            throw new MissingHeaderException("X-Enterprise-Id header is required");
+        }
+        return new GetModulesTablesRequest(enterpriseId);
     }
 }

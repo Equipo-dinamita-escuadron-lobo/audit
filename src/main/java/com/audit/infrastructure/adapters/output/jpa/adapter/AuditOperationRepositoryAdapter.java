@@ -5,6 +5,7 @@ import com.audit.application.internal.QueryOptions;
 import com.audit.domain.enums.UserRole;
 import com.audit.domain.model.AuditOperation;
 import com.audit.domain.model.AuditOperationCriteria;
+import com.audit.domain.model.ModuleTable;
 import com.audit.domain.port.output.AuditOperationRepositoryPort;
 import com.audit.infrastructure.adapters.output.jpa.entity.AuditOperationEntity;
 import com.audit.infrastructure.adapters.output.jpa.mapper.AuditOperationJpaMapper;
@@ -55,6 +56,16 @@ public class AuditOperationRepositoryAdapter implements AuditOperationRepository
     public Optional<AuditOperation> findById(Long id) {
         return auditOperationRepository.findById(id)
                 .map(mapper::toDomain);
+    }
+
+    @Override
+    public List<ModuleTable> findDistinctModulesAndTables(String enterpriseId) {
+        return auditOperationRepository.findDistinctModulesAndTables(enterpriseId)
+                .stream()
+                .map(p -> new ModuleTable(
+                        p.getModuleName(),
+                        p.getAffectedTable()))
+                .toList();
     }
 
     @Override
@@ -134,14 +145,14 @@ public class AuditOperationRepositoryAdapter implements AuditOperationRepository
     }
 
     private Specification<AuditOperationEntity> buildRoleFilter(QueryOptions options) {
-    return (root, query, cb) -> {
-        if (options.getRequestingUserRole() == UserRole.PROFESOR ||
-            options.getRequestingUserRole() == UserRole.ESTUDIANTE) {
-            return cb.notEqual(root.get("userRole"), UserRole.ADMINISTRADOR);
-        }
-        return cb.conjunction(); 
-    };
-}
+        return (root, query, cb) -> {
+            if (options.getRequestingUserRole() == UserRole.PROFESOR ||
+                    options.getRequestingUserRole() == UserRole.ESTUDIANTE) {
+                return cb.notEqual(root.get("userRole"), UserRole.ADMINISTRADOR);
+            }
+            return cb.conjunction();
+        };
+    }
 
     private Sort buildSort(QueryOptions options) {
         String sortField = options.getSortField() != null ? options.getSortField() : "operationAt";
@@ -170,11 +181,11 @@ public class AuditOperationRepositoryAdapter implements AuditOperationRepository
 
     // @Override
     // public List<AuditOperation> findForEsxport(AuditOperationCriteria filter) {
-    //     Specification<AuditOperationEntity> spec = buildSpecification(filter);
-    //     Sort sort = buildSort(filter);
-    //     return auditOperationRepository.findAll(spec, sort)
-    //             .stream()
-    //             .map(mapper::toDomain);
+    // Specification<AuditOperationEntity> spec = buildSpecification(filter);
+    // Sort sort = buildSort(filter);
+    // return auditOperationRepository.findAll(spec, sort)
+    // .stream()
+    // .map(mapper::toDomain);
     // }
 
     @Override

@@ -2,6 +2,7 @@ package com.audit.application.dto.request;
 
 import java.time.Instant;
 
+import com.audit.domain.enums.AuditDateType;
 import com.audit.domain.enums.DocumentOperationType;
 import com.audit.domain.enums.ExportFormat;
 
@@ -15,6 +16,7 @@ public class ExportDocumentsEventsRequest {
     private String enterpriseName;
     private Instant dateFrom;
     private Instant dateTo;
+    private AuditDateType dateType;
     private String documentCode;
     private String documentType;
     private String thirdPartyName;

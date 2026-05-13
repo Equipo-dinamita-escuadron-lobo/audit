@@ -159,12 +159,21 @@ public class AuditDocumentEventRepositoryAdapter implements AuditDocumentEventQu
         params.put("enterpriseId", criteria.getEnterpriseId());
 
         if (criteria.hasDateRange()) {
+            boolean useDocumentDate = criteria.getDateType() == AuditDateType.DOCUMENT_DATE;
             if (criteria.getDateFrom() != null) {
-                sql.append(" AND e.operation_at >= :dateFrom");
+                if (useDocumentDate) {
+                    sql.append(" AND e.document_date >= :dateFrom");
+                } else {
+                    sql.append(" AND e.operation_at >= :dateFrom");
+                }
                 params.put("dateFrom", criteria.getDateFrom());
             }
             if (criteria.getDateTo() != null) {
-                sql.append(" AND e.operation_at <= :dateTo");
+                if (useDocumentDate) {
+                    sql.append(" AND e.document_date <= :dateTo");
+                } else {
+                    sql.append(" AND e.operation_at <= :dateTo");
+                }
                 params.put("dateTo", criteria.getDateTo());
             }
         }

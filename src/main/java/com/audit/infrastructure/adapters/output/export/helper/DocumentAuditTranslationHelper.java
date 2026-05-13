@@ -1,7 +1,5 @@
 package com.audit.infrastructure.adapters.output.export.helper;
 
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -28,7 +26,7 @@ public final class DocumentAuditTranslationHelper {
 
     private static final Map<String, String> MODULE_LABELS = Map.of(
             "WALLET", "Cartera",
-            "INOVICES", "Facturas",
+            "INVOICES", "Facturas",
             "TREASURY", "Tesorería",
             "ACCOUNTING", "Contabilidad");
 
@@ -71,17 +69,6 @@ public final class DocumentAuditTranslationHelper {
             "documentStatus", "Estado del documento",
             "voidedDocument", "Documento anulado");
 
-    private static final Map<String, String> VALUE_LABELS;
-    static {
-        Map<String, String> m = new HashMap<>();
-        m.putAll(FACTURE_TYPE_LABELS);
-        m.putAll(RETURN_TYPE_LABELS);
-        m.putAll(INVENTORY_CONFIG_LABELS);
-        m.put("true", "Activo");
-        m.put("false", "Inactivo");
-        VALUE_LABELS = Collections.unmodifiableMap(m);
-    }
-
     public static String translateOperation(String value) {
         return OPERATION_LABELS.getOrDefault(value, value);
     }
@@ -106,16 +93,34 @@ public final class DocumentAuditTranslationHelper {
         return METADATA_FIELD_LABELS.getOrDefault(key, key);
     }
 
+    public static String translateFactureType(String value) {
+        return FACTURE_TYPE_LABELS.getOrDefault(value, value);
+    }
+
+    public static String translateReturnType(String value) {
+        return RETURN_TYPE_LABELS.getOrDefault(value, value);
+    }
+
+    public static String translateInventoryConfig(String value) {
+        return INVENTORY_CONFIG_LABELS.getOrDefault(value, value);
+    }
+
+    public static String translateBoolean(Boolean value) {
+        if (value == null)
+            return "—";
+        return value ? "Activo" : "Inactivo";
+    }
+
     public static String translateValue(Object value) {
         if (value == null)
             return "—";
         if (value instanceof Boolean b)
-            return b ? "Activo" : "Inactivo";
+            return translateBoolean(b);
         if (value instanceof List<?> list) {
             return list.stream()
-                    .map(v -> VALUE_LABELS.getOrDefault(String.valueOf(v), String.valueOf(v)))
+                    .map(v -> v == null ? "—" : String.valueOf(v))
                     .collect(java.util.stream.Collectors.joining(", "));
         }
-        return VALUE_LABELS.getOrDefault(String.valueOf(value), String.valueOf(value));
+        return String.valueOf(value);
     }
 }

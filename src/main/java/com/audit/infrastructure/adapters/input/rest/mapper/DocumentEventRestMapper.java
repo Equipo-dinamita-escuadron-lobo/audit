@@ -43,6 +43,7 @@ public class DocumentEventRestMapper {
         return ExportDocumentsEventsRequest.builder()
                 .dateFrom(restRequest.getDateFrom().toInstant())
                 .dateTo(restRequest.getDateTo().toInstant())
+                .dateType(restRequest.getDateType())
                 .enterpriseId(restRequest.getEnterpriseId())
                 .enterpriseName(restRequest.getEnterpriseName())
                 .documentCode(restRequest.getDocumentCode())

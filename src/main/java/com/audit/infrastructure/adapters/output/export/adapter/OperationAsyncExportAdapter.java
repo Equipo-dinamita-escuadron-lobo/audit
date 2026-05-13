@@ -1,7 +1,6 @@
 package com.audit.infrastructure.adapters.output.export.adapter;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -17,6 +16,7 @@ import com.audit.application.port.output.IOperationAsyncExportPort;
 import com.audit.domain.model.AuditOperation;
 import com.audit.domain.model.ExportJob;
 import com.audit.infrastructure.adapters.output.export.generator.OperationExcelGenerator;
+import com.audit.infrastructure.adapters.output.export.helper.AuditOperationTranslationHelper;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -60,11 +60,15 @@ public class OperationAsyncExportAdapter implements IOperationAsyncExportPort {
             job.updateProgress(50);
 
             String appliedFilters = buildAppliedFilters(request);
+            String reportDate = DateTimeFormatter
+                    .ofPattern("dd/MM/yyyy HH:mm:ss")
+                    .withZone(ZoneId.of("America/Bogota"))
+                    .format(Instant.now());
             byte[] fileData = excelGenerator.generate(
                     operations,
                     request.getEnterpriseName(),
                     request.getRequestedBy(),
-                    LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")),
+                    reportDate,
                     appliedFilters);
 
             job.updateProgress(90);
@@ -83,11 +87,14 @@ public class OperationAsyncExportAdapter implements IOperationAsyncExportPort {
         if (request.getUserRole() != null)
             filters.append("Rol: ").append(request.getUserRole().name()).append("; ");
         if (request.getOperationType() != null)
-            filters.append("Tipo operación: ").append(request.getOperationType().name()).append("; ");
+            filters.append("Tipo operación: ").append(AuditOperationTranslationHelper.translateOperation(
+                    request.getOperationType().name())).append("; ");
         if (request.getModuleName() != null && !request.getModuleName().isBlank())
-            filters.append("Módulo: ").append(request.getModuleName()).append("; ");
+            filters.append("Módulo: ").append(AuditOperationTranslationHelper.translateModule(
+                    request.getModuleName())).append("; ");
         if (request.getAffectedTable() != null && !request.getAffectedTable().isBlank())
-            filters.append("Tabla: ").append(request.getAffectedTable()).append("; ");
+            filters.append("Tabla: ").append(AuditOperationTranslationHelper.translateTable(
+                    request.getAffectedTable())).append("; ");
         if (request.getDateFrom() != null)
             filters.append("Desde: ").append(formatInstant(request.getDateFrom())).append("; ");
         if (request.getDateTo() != null)

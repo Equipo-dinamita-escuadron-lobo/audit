@@ -4,6 +4,7 @@ import java.time.ZonedDateTime;
 
 import org.springframework.format.annotation.DateTimeFormat;
 
+import com.audit.domain.enums.AuditDateType;
 import com.audit.domain.enums.DocumentOperationType;
 import com.audit.domain.enums.ExportFormat;
 import com.audit.infrastructure.adapters.input.rest.validation.ValidateRange;
@@ -32,6 +33,8 @@ public class ExportDocumentsEventsRestRequest
     @NotNull(message = "Date to is required")
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     private ZonedDateTime dateTo;
+
+    private AuditDateType dateType;
 
     @NotNull(message = "Enterprise ID is required")
     @Size(max = 100)

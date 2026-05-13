@@ -1,6 +1,7 @@
 package com.audit.infrastructure.adapters.output.jpa.repository;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
@@ -20,6 +21,7 @@ public interface IAuditSessionRepository
         JpaSpecificationExecutor<AuditSessionEntity> {
 
     Optional<AuditSessionEntity> findBySessionId(String sessionId);
+
     @Query(value = """
             SELECT
                 login.session_id as sessionId,
@@ -36,7 +38,6 @@ public interface IAuditSessionRepository
                 AND login.action_at <= :dateTo
                 AND (:userName IS NULL OR login.user_name ILIKE CONCAT(:userName, '%'))
                 AND (:userRole IS NULL OR login.user_role = CAST(:userRole AS text))
-                AND (:requestingRole != 'PROFESOR' OR login.user_role != 'ADMINISTRADOR')
             /*#sortBy*/
             """, countQuery = """
             SELECT COUNT(*)
@@ -46,31 +47,61 @@ public interface IAuditSessionRepository
                 AND action_at <= :dateTo
                 AND (:userName IS NULL OR user_name ILIKE CONCAT(:userName, '%'))
                 AND (:userRole IS NULL OR user_role = CAST(:userRole AS text))
-                AND (:requestingRole != 'PROFESOR' OR user_role != 'ADMINISTRADOR')
             """, nativeQuery = true)
     Page<SessionProjection> findCombinedSessions(
             @Param("dateFrom") Instant dateFrom,
             @Param("dateTo") Instant dateTo,
             @Param("userName") String userName,
             @Param("userRole") String userRole,
-            @Param("requestingRole") String requestingRole,
             Pageable pageable);
 
-    
     @Query(value = """
-        SELECT COUNT(*)
-        FROM audit_session
-        WHERE action = 'LOGIN'
-            AND action_at >= :dateFrom
-            AND action_at <= :dateTo
-            AND (:userName IS NULL OR user_name ILIKE CONCAT(:userName, '%'))
-            AND (:userRole IS NULL OR user_role = CAST(:userRole AS text))
-            AND (:requestingRole != 'PROFESOR' OR user_role != 'ADMINISTRADOR')
-        """, nativeQuery = true)
+            SELECT COUNT(*)
+            FROM audit_session
+            WHERE action = 'LOGIN'
+                AND action_at >= :dateFrom
+                AND action_at <= :dateTo
+                AND (:userName IS NULL OR user_name ILIKE CONCAT(:userName, '%'))
+                AND (:userRole IS NULL OR user_role = CAST(:userRole AS text))
+            """, nativeQuery = true)
     long countCombinedSessions(
-        @Param("dateFrom") Instant dateFrom,
-        @Param("dateTo") Instant dateTo,
-        @Param("userName") String userName,
-        @Param("userRole") String userRole,
-        @Param("requestingRole") String requestingRole);
+            @Param("dateFrom") Instant dateFrom,
+            @Param("dateTo") Instant dateTo,
+            @Param("userName") String userName,
+            @Param("userRole") String userRole);
+
+    @Query(value = """
+            SELECT
+                s.session_id AS sessionId,
+                s.user_name AS userName,
+                s.user_role AS userRole,
+                MIN(CASE WHEN s.action = 'LOGIN' THEN s.action_at END) AS loginTime,
+                MAX(CASE WHEN s.action = 'LOGOUT' THEN s.action_at END) AS logoutTime
+            FROM audit_session s
+            WHERE
+                (CAST(:dateFrom AS TIMESTAMP) IS NULL OR s.action_at >= :dateFrom)
+                AND (CAST(:dateTo AS TIMESTAMP) IS NULL OR s.action_at <= :dateTo)
+                AND (
+                    CAST(:userName AS VARCHAR) IS NULL
+                    OR LOWER(s.user_name) LIKE LOWER(CONCAT('%', :userName, '%'))
+                )
+                AND (
+                    CAST(:userRole AS VARCHAR) IS NULL
+                    OR s.user_role = :userRole
+                )
+            GROUP BY s.session_id, s.user_name, s.user_role
+
+            HAVING MIN(
+                CASE WHEN s.action = 'LOGIN'
+                THEN s.action_at
+                END
+            ) IS NOT NULL
+
+            ORDER BY loginTime DESC
+            """, nativeQuery = true)
+    List<SessionProjection> findAllForExport(
+            @Param("dateFrom") Instant dateFrom,
+            @Param("dateTo") Instant dateTo,
+            @Param("userName") String userName,
+            @Param("userRole") String userRole);
 }

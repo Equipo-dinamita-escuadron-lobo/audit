@@ -8,9 +8,9 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
 
 import com.audit.domain.enums.OperationType;
-import com.audit.domain.exceptions.InvalidAuditEventException;
 import com.audit.domain.model.AuditOperation;
 import com.audit.domain.model.OperationData;
+import com.audit.infrastructure.adapters.output.exception.security.AuditMappingException;
 import com.audit.infrastructure.adapters.output.jpa.entity.AuditOperationEntity;
 
 @Component
@@ -57,7 +57,7 @@ public class AuditOperationJpaMapper {
 
     private OperationData parseOperationData(Map<String, Object> dataMap, String operationType) {
         if (dataMap == null || dataMap.isEmpty()) {
-            throw new InvalidAuditEventException("Stored audit data cannot be null or empty");
+            throw new AuditMappingException("Stored audit data cannot be null or empty");
         }
         OperationType type = OperationType.valueOf(operationType);
         return switch (type) {
@@ -76,7 +76,7 @@ public class AuditOperationJpaMapper {
         Map<String, Object> entity = extractEntityData(dataMap);
 
         if (entity == null || entity.isEmpty()) {
-            throw new InvalidAuditEventException("Entity data missing for operation");
+            throw new AuditMappingException("Entity data missing for operation");
         }
 
         return creator.apply(entity);
@@ -87,7 +87,7 @@ public class AuditOperationJpaMapper {
         Map<String, Map<String, Object>> changesMap = (Map<String, Map<String, Object>>) dataMap.get("changes");
 
         if (changesMap == null || changesMap.isEmpty()) {
-            throw new InvalidAuditEventException("Update operation must contain 'changes'");
+            throw new AuditMappingException("Update operation must contain 'changes'");
         }
 
         Map<String, OperationData.FieldChange> fieldChanges = changesMap.entrySet().stream()
@@ -138,6 +138,6 @@ public class AuditOperationJpaMapper {
             return Map.of("changes", changesMap);
         }
 
-        throw new InvalidAuditEventException("OperationData has no entity or changes");
+        throw new AuditMappingException("OperationData has no entity or changes");
     }
 }

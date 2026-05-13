@@ -51,6 +51,10 @@ public class GetOperationsRestRequest implements DateRangeRequest {
 
     private OperationType operationType;
 
+    @NotNull(message = "Enterprise ID is required")
+    @Size(max = 100)
+    private String enterpriseId;
+
     @Size(max = 100, message = "Register ID must not exceed 100 characters")
     private String registerId;
 
@@ -64,8 +68,7 @@ public class GetOperationsRestRequest implements DateRangeRequest {
     private Integer size = 20;
 
     @Builder.Default
-    @Pattern(regexp = "^(operationAt|userName|userRole|operationType|moduleName|affectedTable)$", 
-            message = "Sort field must be one of: operationAt, userName, userRole, operationType, moduleName, affectedTable")
+    @Pattern(regexp = "^(operationAt|userName|userRole|operationType|moduleName|affectedTable)$", message = "Sort field must be one of: operationAt, userName, userRole, operationType, moduleName, affectedTable")
     private String sortField = "operationAt";
 
     @Builder.Default

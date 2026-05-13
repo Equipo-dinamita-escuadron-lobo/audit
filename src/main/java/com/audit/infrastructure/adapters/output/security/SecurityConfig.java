@@ -9,14 +9,16 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 
+import com.audit.infrastructure.adapters.output.security.exception.CustomAccessDeniedHandler;
+import com.audit.infrastructure.adapters.output.security.exception.JwtAuthenticationEntryPoint;
 
 import lombok.RequiredArgsConstructor;
 
 /**
  * @brief Spring Security configuration for JWT-based authentication
  * 
- * Configures OAuth2 resource server with JWT authentication,
- * CSRF protection disabled, and stateless session management.
+ *        Configures OAuth2 resource server with JWT authentication,
+ *        CSRF protection disabled, and stateless session management.
  */
 @Configuration
 @EnableWebSecurity
@@ -25,6 +27,8 @@ import lombok.RequiredArgsConstructor;
 @Profile("!test")
 public class SecurityConfig {
 
+    private final JwtAuthenticationEntryPoint authenticationEntryPoint;
+    private final CustomAccessDeniedHandler accessDeniedHandler;
     private final JwtAuthConverter jwtAuthConverter;
 
     @Bean
@@ -37,6 +41,9 @@ public class SecurityConfig {
                         .anyRequest()
                         .authenticated())
                 .oauth2ResourceServer(oauth -> oauth.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthConverter)))
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint(authenticationEntryPoint)
+                        .accessDeniedHandler(accessDeniedHandler))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .build();
     }

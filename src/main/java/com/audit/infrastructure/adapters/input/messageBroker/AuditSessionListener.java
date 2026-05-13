@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 
 import com.audit.application.dto.request.LogSessionRequest;
 import com.audit.application.port.input.commands.LogAuditSessionCommand;
-import com.audit.domain.port.messageProcessingError.IMessageErrorHandlingPort;
+import com.audit.application.port.output.IMessageErrorHandlingPort;
 import com.audit.infrastructure.adapters.input.messageBroker.base.AbstractMessageListener;
 import com.audit.infrastructure.adapters.input.messageBroker.dto.SessionEventDto;
 import com.audit.infrastructure.adapters.input.messageBroker.mapper.SessionEventMapper;
@@ -27,8 +27,9 @@ public class AuditSessionListener extends AbstractMessageListener<SessionEventDt
 
     public AuditSessionListener(LogAuditSessionCommand logAuditSessionPort,
             SessionEventMapper sessionEventMapper,
-            IMessageErrorHandlingPort messageErrorHandlingPort) {
-        super(messageErrorHandlingPort);
+            IMessageErrorHandlingPort messageErrorHandlingPort,
+            ObjectMapper objectMapper) {
+        super(messageErrorHandlingPort, objectMapper);
         this.logAuditSessionPort = logAuditSessionPort;
         this.sessionEventMapper = sessionEventMapper;
     }
@@ -77,7 +78,7 @@ public class AuditSessionListener extends AbstractMessageListener<SessionEventDt
     @Override
     protected String convertEventToJson(SessionEventDto event) {
         try {
-            return new ObjectMapper().writeValueAsString(event);
+            return objectMapper.writeValueAsString(event);
         } catch (JsonProcessingException e) {
             return "{\"error\": \"Failed to convert\"}";
         }

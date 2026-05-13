@@ -4,7 +4,7 @@ import java.time.Instant;
 
 import org.springframework.stereotype.Repository;
 
-import com.audit.domain.port.messageProcessingError.IMessageErrorHandlingPort;
+import com.audit.application.port.output.IMessageErrorHandlingPort;
 import com.audit.infrastructure.adapters.output.jpa.entity.MessageErrorEntity;
 import com.audit.infrastructure.adapters.output.jpa.repository.IMessageErrorRepository;
 

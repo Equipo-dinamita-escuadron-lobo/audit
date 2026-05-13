@@ -1,6 +1,9 @@
 package com.audit.domain.model;
 
 import java.util.Map;
+import java.util.Objects;
+import com.audit.domain.exceptions.InvalidSnapshotDataException;
+
 import java.util.Collections;
 
 import lombok.Getter;
@@ -20,29 +23,40 @@ public class OperationData {
 
     public static OperationData forCreate(Map<String, Object> entity) {
         if (entity == null || entity.isEmpty()) {
-            throw new IllegalArgumentException("Entity data cannot be null or empty for CREATE operation");
+            throw new InvalidSnapshotDataException("Entity data cannot be null or empty for CREATE operation");
         }
         return new OperationData(entity, null, null);
     }
 
     public static OperationData forUpdate(Map<String, FieldChange> changes) {
         if (changes == null || changes.isEmpty()) {
-            throw new IllegalArgumentException("Changes cannot be null or empty for UPDATE operation");
+            throw new InvalidSnapshotDataException("Changes cannot be null or empty for UPDATE operation");
         }
+        validateChangeKeys(changes);
         return new OperationData(null, null, changes);
     }
 
     public static OperationData forDelete(Map<String, Object> entity) {
         if (entity == null || entity.isEmpty()) {
-            throw new IllegalArgumentException("Entity data cannot be null or empty for DELETE operation");
+            throw new InvalidSnapshotDataException("Entity data cannot be null or empty for DELETE operation");
         }
         return new OperationData(entity, null, null);
     }
 
     public static OperationData forUpdate(Map<String, Object> context, Map<String, FieldChange> changes) {
         if (changes == null || changes.isEmpty())
-            throw new IllegalArgumentException("Changes cannot be null or empty for UPDATE operation");
+            throw new InvalidSnapshotDataException("Changes cannot be null or empty for UPDATE operation");
+        validateChangeKeys(changes);
         return new OperationData(null, context, changes);
+    }
+
+    private static void validateChangeKeys(Map<String, FieldChange> changes) {
+        for (String key : changes.keySet()) {
+            if (key == null || key.isBlank()) {
+                throw new InvalidSnapshotDataException(
+                        "Change field name cannot be null or empty");
+            }
+        }
     }
 
     @Getter
@@ -56,6 +70,10 @@ public class OperationData {
         }
 
         public static FieldChange of(Object before, Object after) {
+            if (Objects.equals(before, after)) {
+                throw new InvalidSnapshotDataException(
+                        "Field change must represent a real value modification");
+            }
             return new FieldChange(before, after);
         }
     }

@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 
 import com.audit.application.dto.request.LogOperationRequest;
 import com.audit.application.port.input.commands.LogAuditOperationCommand;
-import com.audit.domain.port.messageProcessingError.IMessageErrorHandlingPort;
+import com.audit.application.port.output.IMessageErrorHandlingPort;
 import com.audit.infrastructure.adapters.input.messageBroker.base.AbstractMessageListener;
 import com.audit.infrastructure.adapters.input.messageBroker.dto.OperationEventDto;
 import com.audit.infrastructure.adapters.input.messageBroker.mapper.OperationEventMapper;
@@ -27,8 +27,9 @@ public class AuditOperationListener extends AbstractMessageListener<OperationEve
 
     public AuditOperationListener(LogAuditOperationCommand logOperationPort,
             OperationEventMapper operationEventMapper,
-            IMessageErrorHandlingPort messageErrorHandlingPort) {
-        super(messageErrorHandlingPort);
+            IMessageErrorHandlingPort messageErrorHandlingPort,
+            ObjectMapper objectMapper) {
+        super(messageErrorHandlingPort, objectMapper);
         this.logOperationPort = logOperationPort;
         this.operationEventMapper = operationEventMapper;
     }
@@ -93,7 +94,7 @@ public class AuditOperationListener extends AbstractMessageListener<OperationEve
     @Override
     protected String convertEventToJson(OperationEventDto event) {
         try {
-            return new ObjectMapper().writeValueAsString(event);
+            return objectMapper.writeValueAsString(event);
         } catch (JsonProcessingException e) {
             return "{\"error\": \"Failed to convert\"}";
         }

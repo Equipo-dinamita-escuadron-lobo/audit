@@ -1,10 +1,10 @@
 package com.audit.infrastructure.adapters.output.jpa.adapter;
 
-import com.audit.application.internal.PageResult;
-import com.audit.application.internal.QueryOptions;
-import com.audit.domain.enums.UserRole;
+import com.audit.application.internal.query.AuditOperationCriteria;
+import com.audit.application.internal.query.PageResult;
+import com.audit.application.internal.query.QueryOptions;
+import com.audit.application.port.output.AuditOperationQueryPort;
 import com.audit.domain.model.AuditOperation;
-import com.audit.domain.model.AuditOperationCriteria;
 import com.audit.domain.model.ModuleTable;
 import com.audit.domain.port.output.AuditOperationRepositoryPort;
 import com.audit.infrastructure.adapters.output.jpa.entity.AuditOperationEntity;
@@ -28,7 +28,8 @@ import java.util.Set;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class AuditOperationRepositoryAdapter implements AuditOperationRepositoryPort {
+public class AuditOperationRepositoryAdapter implements AuditOperationQueryPort,
+        AuditOperationRepositoryPort {
 
     private final IAuditOperationRepository auditOperationRepository;
     private final AuditOperationJpaMapper mapper;
@@ -42,7 +43,7 @@ public class AuditOperationRepositoryAdapter implements AuditOperationRepository
 
     @Override
     public PageResult<AuditOperation> findPageByCriteria(AuditOperationCriteria criteria, QueryOptions options) {
-        Specification<AuditOperationEntity> spec = buildSpecification(criteria).and(buildRoleFilter(options));
+        Specification<AuditOperationEntity> spec = buildSpecification(criteria);
         Sort sort = buildSort(options);
         PageRequest pageRequest = PageRequest.of(options.getPage(), options.getSize(), sort);
         Page<AuditOperationEntity> page = auditOperationRepository.findAll(spec, pageRequest);
@@ -97,23 +98,13 @@ public class AuditOperationRepositoryAdapter implements AuditOperationRepository
             }
 
             if (criteria.hasModuleNameCriteria()) {
-                String searchTerm = criteria.getModuleName().toLowerCase().trim();
-                if (searchTerm.length() < 3) {
-                    throw new IllegalArgumentException("moduleName filter must be at least 3 characters");
-                }
-                predicates.add(criteriaBuilder.like(
-                        criteriaBuilder.lower(root.get("moduleName")),
-                        searchTerm + "%"));
+                predicates.add(criteriaBuilder.equal(
+                        root.get("moduleName"), criteria.getModuleName()));
             }
 
             if (criteria.hasAffectedTableCriteria()) {
-                String searchTerm = criteria.getAffectedTable().toLowerCase().trim();
-                if (searchTerm.length() < 3) {
-                    throw new IllegalArgumentException("affectedTable filter must be at least 3 characters");
-                }
-                predicates.add(criteriaBuilder.like(
-                        criteriaBuilder.lower(root.get("affectedTable")),
-                        searchTerm + "%"));
+                predicates.add(criteriaBuilder.equal(
+                        root.get("affectedTable"), criteria.getAffectedTable()));
             }
 
             if (criteria.hasUserNameCriteria()) {
@@ -135,22 +126,7 @@ public class AuditOperationRepositoryAdapter implements AuditOperationRepository
                 predicates.add(criteriaBuilder.equal(
                         root.get("operationType"), criteria.getOperationType()));
             }
-
-            if (criteria.hasRegisterIdCriteria()) {
-                predicates.add(criteriaBuilder.equal(
-                        root.get("registerId"), criteria.getRegisterId()));
-            }
             return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
-        };
-    }
-
-    private Specification<AuditOperationEntity> buildRoleFilter(QueryOptions options) {
-        return (root, query, cb) -> {
-            if (options.getRequestingUserRole() == UserRole.PROFESOR ||
-                    options.getRequestingUserRole() == UserRole.ESTUDIANTE) {
-                return cb.notEqual(root.get("userRole"), UserRole.ADMINISTRADOR);
-            }
-            return cb.conjunction();
         };
     }
 
@@ -179,18 +155,12 @@ public class AuditOperationRepositoryAdapter implements AuditOperationRepository
         return auditOperationRepository.count(spec);
     }
 
-    // @Override
-    // public List<AuditOperation> findForEsxport(AuditOperationCriteria filter) {
-    // Specification<AuditOperationEntity> spec = buildSpecification(filter);
-    // Sort sort = buildSort(filter);
-    // return auditOperationRepository.findAll(spec, sort)
-    // .stream()
-    // .map(mapper::toDomain);
-    // }
-
     @Override
-    public List<AuditOperation> findForExport(AuditOperationCriteria criteria) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'findForExport'");
+    public List<AuditOperation> findAllForExport(AuditOperationCriteria criteria) {
+        Specification<AuditOperationEntity> spec = buildSpecification(criteria);
+        return auditOperationRepository.findAll(spec)
+                .stream()
+                .map(mapper::toDomain)
+                .toList();
     }
 }

@@ -109,13 +109,16 @@ public class AuditOperation {
         switch (operationType) {
             case CREATE, DELETE -> {
                 if (dataObject.getEntity().isEmpty())
-                    throw new InvalidAuditEventException(operationType + " requires entity data");
+                    throw new InvalidAuditEventException(operationType + " requires entity snapshot data");
                 if (!dataObject.getChanges().isEmpty())
-                    throw new InvalidAuditEventException(operationType + " cannot contain entity data");
+                    throw new InvalidAuditEventException(operationType + " cannot contain change data");
             }
             case UPDATE, ACTIVATE, INACTIVATE -> {
                 if (dataObject.getChanges().isEmpty())
                     throw new InvalidAuditEventException(operationType + " requires change data");
+                if (!dataObject.getEntity().isEmpty()) {
+                    throw new InvalidAuditEventException(operationType + " cannot contain entity snapshot data");
+                }
             }
         }
     }

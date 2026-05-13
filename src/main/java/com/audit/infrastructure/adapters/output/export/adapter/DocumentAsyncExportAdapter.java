@@ -1,7 +1,6 @@
 package com.audit.infrastructure.adapters.output.export.adapter;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -43,6 +42,7 @@ public class DocumentAsyncExportAdapter implements IDocumentAsyncExportPort {
                     request.getEnterpriseId(),
                     request.getDateFrom(),
                     request.getDateTo(),
+                    request.getDateType(),
                     request.getDocumentCode(),
                     request.getDocumentType(),
                     request.getThirdPartyName(),
@@ -59,11 +59,15 @@ public class DocumentAsyncExportAdapter implements IDocumentAsyncExportPort {
             job.updateProgress(50);
 
             String appliedFilters = buildAppliedFilters(request);
+            String reportDate = DateTimeFormatter
+                    .ofPattern("dd/MM/yyyy HH:mm:ss")
+                    .withZone(ZoneId.of("America/Bogota"))
+                    .format(Instant.now());
             byte[] fileData = excelGenerator.generate(
                     events,
                     request.getEnterpriseName(),
                     request.getRequestedBy(),
-                    LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")),
+                    reportDate,
                     appliedFilters);
 
             job.updateProgress(90);

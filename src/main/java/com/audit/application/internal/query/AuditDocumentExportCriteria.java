@@ -2,6 +2,7 @@ package com.audit.application.internal.query;
 
 import java.time.Instant;
 
+import com.audit.domain.enums.AuditDateType;
 import com.audit.domain.enums.DocumentOperationType;
 
 import lombok.Getter;
@@ -13,6 +14,7 @@ public class AuditDocumentExportCriteria {
     private final String enterpriseId;
     private final Instant dateFrom;
     private final Instant dateTo;
+    private final AuditDateType dateType;
     private final String documentCode;
     private final String documentType;
     private final String thirdPartyName;
@@ -20,11 +22,12 @@ public class AuditDocumentExportCriteria {
     private final String userName;
 
     private AuditDocumentExportCriteria(String enterpriseId, Instant dateFrom, Instant dateTo,
-            String documentCode, String documentType, String thirdPartyName,
+            AuditDateType dateType, String documentCode, String documentType, String thirdPartyName,
             DocumentOperationType operationType, String userName) {
         this.enterpriseId = enterpriseId;
         this.dateFrom = dateFrom;
         this.dateTo = dateTo;
+        this.dateType = dateType != null ? dateType : AuditDateType.OPERATION_DATE;
         this.documentCode = documentCode;
         this.documentType = documentType;
         this.thirdPartyName = thirdPartyName;
@@ -33,12 +36,12 @@ public class AuditDocumentExportCriteria {
     }
 
     public static AuditDocumentExportCriteria create(String enterpriseId, Instant dateFrom,
-            Instant dateTo, String documentCode, String documentType, String thirdPartyName,
+            Instant dateTo, AuditDateType dateType, String documentCode, String documentType, String thirdPartyName,
             DocumentOperationType operationType, String userName) {
         if (enterpriseId == null || enterpriseId.isBlank())
             throw new IllegalArgumentException("enterpriseId requerido");
         return new AuditDocumentExportCriteria(enterpriseId, dateFrom, dateTo,
-                documentCode, documentType, thirdPartyName, operationType, userName);
+                dateType, documentCode, documentType, thirdPartyName, operationType, userName);
     }
 
     public boolean hasDateRange() {

@@ -1,7 +1,6 @@
 package com.audit.infrastructure.adapters.output.export.adapter;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -58,13 +57,15 @@ public class SessionAsyncExportAdapter implements ISessionAsyncExportPort {
             }
 
             job.updateProgress(50);
+            String reportDate = DateTimeFormatter
+                    .ofPattern("dd/MM/yyyy HH:mm:ss")
+                    .withZone(ZoneId.of("America/Bogota"))
+                    .format(Instant.now());
 
             byte[] fileData = request.getExportFormat() == ExportFormat.PDF
-                    ? pdfGenerator.generate(sessions, request.getRequestedBy(),
-                            LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")),
+                    ? pdfGenerator.generate(sessions, request.getRequestedBy(), reportDate,
                             buildAppliedFilters(request))
-                    : excelGenerator.generate(sessions, request.getRequestedBy(),
-                            LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")),
+                    : excelGenerator.generate(sessions, request.getRequestedBy(), reportDate,
                             buildAppliedFilters(request));
 
             job.updateProgress(90);

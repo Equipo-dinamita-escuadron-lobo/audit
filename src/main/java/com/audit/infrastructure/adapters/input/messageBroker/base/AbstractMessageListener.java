@@ -4,8 +4,8 @@ import java.util.Optional;
 
 import org.springframework.amqp.core.Message;
 
-import com.audit.domain.exceptions.InvalidAuditEventException;
-import com.audit.domain.port.messageProcessingError.IMessageErrorHandlingPort;
+import com.audit.application.port.output.IMessageErrorHandlingPort;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rabbitmq.client.Channel;
 
@@ -20,20 +20,20 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public abstract class AbstractMessageListener<T> {
 
+    protected final ObjectMapper objectMapper;
+
     /**
      * Puerto para el manejo de errores de procesamiento.
      * Debe ser inyectado por las clases hijas.
      */
     protected IMessageErrorHandlingPort messageErrorHandlingPort;
 
-    protected AbstractMessageListener(IMessageErrorHandlingPort messageErrorHandlingPort) {
+    protected AbstractMessageListener(
+            IMessageErrorHandlingPort messageErrorHandlingPort,
+            ObjectMapper objectMapper) {
         this.messageErrorHandlingPort = messageErrorHandlingPort;
+        this.objectMapper = objectMapper;
     }
-
-    /**
-     * ObjectMapper para convertir eventos a JSON para almacenamiento de errores.
-     */
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     /**
      * Método principal para manejar mensajes entrantes.
@@ -137,7 +137,7 @@ public abstract class AbstractMessageListener<T> {
 
     private String resolveErrorStage(Exception e) {
         String exName = e.getClass().getSimpleName();
-        if (e instanceof InvalidAuditEventException || exName.contains("Validation"))
+        if (e instanceof RuntimeException || exName.contains("Validation"))
             return "VALIDATION";
         if (exName.contains("Mapping") || exName.contains("JsonMapping")
                 || exName.contains("JsonParse") || e instanceof IllegalArgumentException)
@@ -216,7 +216,7 @@ public abstract class AbstractMessageListener<T> {
 
     protected boolean isValidJsonSize(Object data, int maxBytes) {
         try {
-            String json = OBJECT_MAPPER.writeValueAsString(data);
+            String json = objectMapper.writeValueAsString(data);
             return json.length() <= maxBytes;
         } catch (Exception e) {
             return false;

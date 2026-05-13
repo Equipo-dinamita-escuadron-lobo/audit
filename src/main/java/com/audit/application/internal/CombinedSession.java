@@ -3,6 +3,7 @@ package com.audit.application.internal;
 import java.time.Instant;
 
 import com.audit.domain.enums.UserRole;
+import com.audit.domain.exceptions.InvalidAuditEventException;
 
 import lombok.Getter;
 
@@ -26,9 +27,9 @@ public class CombinedSession {
     public static CombinedSession of(String sessionId, String userName,
             UserRole userRole, Instant loginTime, Instant logoutTime) {
         if (sessionId == null || sessionId.isBlank())
-            throw new IllegalArgumentException("Session ID required");
+            throw new InvalidAuditEventException("Session ID required");
         if (loginTime == null)
-            throw new IllegalArgumentException("Login time required");
+            throw new InvalidAuditEventException("Login time is required for session: " + sessionId);
         return new CombinedSession(sessionId, userName, userRole, loginTime, logoutTime);
     }
 

@@ -29,7 +29,8 @@ public class AuditSession {
     /**
      * Private constructor to enforce the use of the factory method
      */
-    private AuditSession(Long id, String sessionId, String userId, String userName, UserRole userRole, UserAction action,
+    private AuditSession(Long id, String sessionId, String userId, String userName, UserRole userRole,
+            UserAction action,
             Instant actionAt, String ipAddress, Instant createdAt) {
         this.id = id;
         this.sessionId = sessionId;
@@ -46,11 +47,11 @@ public class AuditSession {
     /**
      * Factory method to create a new AuditSession instance with validation
      */
-    public static AuditSession create(String sessionId, String userId, String userName, UserRole userRole, UserAction action,
+    public static AuditSession create(String sessionId, String userId, String userName, UserRole userRole,
+            UserAction action,
             Instant actionAt, String ipAddress) {
 
         validateUserData(userId, userName, userRole);
-        validateSessionAction(action);
         validateIPAddress(ipAddress);
         validateActionAt(actionAt);
         validateSessionId(sessionId);
@@ -82,10 +83,6 @@ public class AuditSession {
             throw new InvalidAuditEventException("User name cannot be null or empty");
         }
 
-        if (userName.trim().length() > 255) {
-            throw new InvalidAuditEventException("User name cannot exceed 255 characters");
-        }
-
         if (userRole == null) {
             throw new InvalidAuditEventException("User role cannot be null");
         }
@@ -97,20 +94,9 @@ public class AuditSession {
         }
     }
 
-    private static void validateSessionAction(UserAction action) {
-        if (action != UserAction.LOGIN && action != UserAction.LOGOUT) {
-            throw new InvalidAuditEventException(
-                    String.format("Invalid session action: %s. Only LOGIN and LOGOUT are allowed.", action));
-        }
-    }
-
     private static void validateIPAddress(String ipAddress) {
         if (ipAddress == null || ipAddress.trim().isEmpty()) {
             throw new InvalidAuditEventException("IP address cannot be null or empty");
-        }
-        String trimmedIp = ipAddress.trim();
-        if (trimmedIp.length() > 45) {
-            throw new InvalidAuditEventException("IP address format is invalid");
         }
     }
 
@@ -118,7 +104,7 @@ public class AuditSession {
         if (actionAt == null) {
             throw new InvalidAuditEventException("Action timestamp cannot be null");
         }
-        if (actionAt.isAfter(Instant.now())) {
+        if (actionAt.isAfter(Instant.now().plusSeconds(300))) {
             throw new InvalidAuditEventException("Action timestamp cannot be in the future");
         }
     }

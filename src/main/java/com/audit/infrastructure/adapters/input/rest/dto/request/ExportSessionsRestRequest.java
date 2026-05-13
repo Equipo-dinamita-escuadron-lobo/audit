@@ -2,11 +2,15 @@ package com.audit.infrastructure.adapters.input.rest.dto.request;
 
 import java.time.ZonedDateTime;
 
+import org.springframework.format.annotation.DateTimeFormat;
+
+import com.audit.domain.enums.ExportFormat;
 import com.audit.domain.enums.UserAction;
 import com.audit.domain.enums.UserRole;
 import com.audit.infrastructure.adapters.input.rest.validation.ValidateRange;
 
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -19,21 +23,24 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 @ValidateRange
-public class ExportSessionsRestRequest implements DateRangeRequest {
+public class ExportSessionsRestRequest
+        implements DateRangeRequest {
 
     @NotNull(message = "Date from is required")
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     private ZonedDateTime dateFrom;
 
     @NotNull(message = "Date to is required")
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     private ZonedDateTime dateTo;
-    
+
+    @Size(max = 100, message = "User name must not exceed 100 characters")
     private String userName;
+
     private UserRole userRole;
+
     private UserAction action;
 
-    @Builder.Default
-    private String sortField = "loginTime";
-    @Builder.Default
-    private String sortDirection = "DESC";
-
+    @NotNull(message = "Export format is required")
+    private ExportFormat exportFormat;
 }

@@ -8,20 +8,21 @@ import org.springframework.transaction.annotation.Transactional;
 import com.audit.application.dto.request.GetModulesTablesRequest;
 import com.audit.application.dto.response.ModuleTableResponse;
 import com.audit.application.port.input.queries.GetModulesAndTablesQuery;
-import com.audit.domain.port.output.AuditOperationRepositoryPort;
-
-import lombok.RequiredArgsConstructor;
+import com.audit.application.port.output.AuditOperationQueryPort;
 
 @Service
-@RequiredArgsConstructor
 public class GetModulesAndTablesQueryImpl implements GetModulesAndTablesQuery {
 
-    private final AuditOperationRepositoryPort auditOperationRepositoryPort;
+    private final AuditOperationQueryPort queryPort;
+
+    public GetModulesAndTablesQueryImpl(AuditOperationQueryPort queryPort) {
+        this.queryPort = queryPort;
+    }
 
     @Override
     @Transactional(readOnly = true)
     public List<ModuleTableResponse> execute(GetModulesTablesRequest request) {
-        return auditOperationRepositoryPort.findDistinctModulesAndTables(request.enterpriseId())
+        return queryPort.findDistinctModulesAndTables(request.enterpriseId())
                 .stream()
                 .map(mt -> new ModuleTableResponse(
                         mt.moduleName(),

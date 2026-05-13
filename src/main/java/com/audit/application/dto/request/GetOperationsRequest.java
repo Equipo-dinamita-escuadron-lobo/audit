@@ -22,8 +22,6 @@ public class GetOperationsRequest {
     private String registerId;
     private String enterpriseId;
 
-    private String requestingUserRole;
-
     @Builder.Default
     private Integer page = 0;
 

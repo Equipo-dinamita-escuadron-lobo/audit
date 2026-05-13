@@ -1,6 +1,5 @@
 package com.audit.infrastructure.adapters.output.security;
 
-
 import java.util.Collection;
 import java.util.Optional;
 
@@ -10,6 +9,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Service;
+
+import com.audit.infrastructure.adapters.output.exception.security.AuthenticationRequiredException;
+import com.audit.infrastructure.adapters.output.exception.security.InvalidJwtAuthenticationException;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -21,7 +23,7 @@ public class SecurityContextService {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         if (authentication == null || !authentication.isAuthenticated()) {
-            throw new SecurityException("No authenticated user found");
+            throw new AuthenticationRequiredException("No authenticated user found");
         }
 
         if (authentication instanceof JwtAuthenticationToken jwtAuth) {
@@ -31,14 +33,14 @@ public class SecurityContextService {
             return userId;
         }
 
-        throw new SecurityException("Authentication is not JWT-based");
+        throw new InvalidJwtAuthenticationException("Authentication is not JWT-based");
     }
 
     public String getCurrentUserRole() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         if (authentication == null || !authentication.isAuthenticated()) {
-            throw new SecurityException("No authenticated user found");
+            throw new AuthenticationRequiredException("No authenticated user found");
         }
 
         Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
@@ -54,14 +56,14 @@ public class SecurityContextService {
             return role.get();
         }
 
-        throw new SecurityException("No role found for current user");
+        throw new InvalidJwtAuthenticationException("No role found for current user");
     }
 
     public String getCurrentUsername() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         if (authentication == null || !authentication.isAuthenticated()) {
-            throw new SecurityException("No authenticated user found");
+            throw new AuthenticationRequiredException("No authenticated user found");
         }
 
         if (authentication instanceof JwtAuthenticationToken jwtAuth) {
@@ -86,7 +88,7 @@ public class SecurityContextService {
             return jwtAuth.getToken().getTokenValue();
         }
 
-        throw new SecurityException("No JWT token found in security context");
+        throw new InvalidJwtAuthenticationException("No JWT token found in security context");
     }
 
     public String extractClaim(String claimName) {
@@ -105,7 +107,7 @@ public class SecurityContextService {
             return null;
         }
 
-        throw new SecurityException("Authentication is not JWT-based");
+        throw new InvalidJwtAuthenticationException("Authentication is not JWT-based");
     }
 
     /**
@@ -118,7 +120,7 @@ public class SecurityContextService {
             return jwtAuth.getToken().getTokenValue();
         }
 
-        throw new SecurityException("No JWT token found in security context");
+        throw new InvalidJwtAuthenticationException("No JWT token found in security context");
     }
 
     /**

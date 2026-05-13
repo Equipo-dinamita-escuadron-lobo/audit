@@ -16,7 +16,8 @@ public class SessionRestMapper {
 
     private final SecurityContextService securityContextService;
 
-    public GetSessionsRequest toGetSessionsRequest(GetSessionsRestRequest restRequest) {
+    public GetSessionsRequest toGetSessionsRequest(
+            GetSessionsRestRequest restRequest) {
 
         String requestingUserRole = securityContextService.getCurrentUserRole();
 
@@ -35,18 +36,18 @@ public class SessionRestMapper {
     }
 
     public ExportSessionsRequest toExportSessionsRequest(
-            ExportSessionsRestRequest restRequest, String format) {
-        String requestingUserRole = securityContextService.getCurrentUserRole();
+            ExportSessionsRestRequest restRequest) {
+
+        String requestedBy = securityContextService.getCurrentUsername();
+
         return ExportSessionsRequest.builder()
                 .dateFrom(restRequest.getDateFrom().toInstant())
                 .dateTo(restRequest.getDateTo().toInstant())
                 .userName(restRequest.getUserName())
                 .userRole(restRequest.getUserRole())
                 .action(restRequest.getAction())
-                .format(format) 
-                .sortField(restRequest.getSortField())
-                .sortDirection(restRequest.getSortDirection())
-                .requestedBy(requestingUserRole)
+                .exportFormat(restRequest.getExportFormat())
+                .requestedBy(requestedBy)
                 .build();
     }
 }

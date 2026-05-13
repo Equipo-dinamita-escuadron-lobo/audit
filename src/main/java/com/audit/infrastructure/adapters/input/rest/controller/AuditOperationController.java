@@ -4,21 +4,17 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
-
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
+import java.util.Map;
 
 import com.audit.application.dto.request.ExportOperationsRequest;
 import com.audit.application.dto.request.GetModulesTablesRequest;
 import com.audit.application.dto.request.GetOperationsRequest;
-import com.audit.application.dto.response.ExportFileResponse;
 import com.audit.application.dto.response.ModuleTableResponse;
 import com.audit.application.dto.response.OperationAuditResponse;
 import com.audit.application.dto.response.PageResponse;
-import com.audit.application.port.input.queries.ExportAuditOperationsQuery;
 import com.audit.application.port.input.queries.GetAuditOperationsQuery;
 import com.audit.application.port.input.queries.GetModulesAndTablesQuery;
+import com.audit.application.port.input.queries.export.IOperationExportUseCase;
 import com.audit.infrastructure.adapters.input.rest.dto.request.ExportOperationsRestRequest;
 import com.audit.infrastructure.adapters.input.rest.dto.request.GetOperationsRestRequest;
 import com.audit.infrastructure.adapters.input.rest.mapper.OperationRestMapper;
@@ -44,7 +40,7 @@ public class AuditOperationController {
     private final GetAuditOperationsQuery getAuditOperationsQuery;
     private final GetModulesAndTablesQuery getModulesAndTablesQuery;
     private final OperationRestMapper operationRestMapper;
-    private final ExportAuditOperationsQuery exportAuditOperationsQuery;
+    private final IOperationExportUseCase operationExportUseCase;
 
     @GetMapping()
     @PreAuthorize("hasAnyRole('Administrador','Profesor','Estudiante')")
@@ -56,18 +52,6 @@ public class AuditOperationController {
         return ResponseEntity.ok(response);
     }
 
-    @PostMapping("/export_excel")
-    @PreAuthorize("hasRole('Administrador')")
-    // @PreAuthorize("hasAuthority('Export_Excel_Audit_Operations')")
-    public ResponseEntity<byte[]> exportOperationsExcel(
-            @Valid @RequestBody ExportOperationsRestRequest restRequest,
-            HttpServletRequest httpServletRequest) {
-        ExportOperationsRequest request = operationRestMapper.toExportOperationsRequest(restRequest,
-                httpServletRequest);
-        ExportFileResponse response = exportAuditOperationsQuery.execute(request);
-        return buildFileResponse(response);
-    }
-
     @GetMapping("/modules-tables")
     @PreAuthorize("hasAnyRole('Administrador','Profesor','Estudiante')")
     public ResponseEntity<List<ModuleTableResponse>> getModulesAndTables(
@@ -76,12 +60,15 @@ public class AuditOperationController {
         return ResponseEntity.ok(getModulesAndTablesQuery.execute(request));
     }
 
-    private ResponseEntity<byte[]> buildFileResponse(ExportFileResponse response) {
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.parseMediaType(response.getContentType()));
-        headers.setContentDispositionFormData("attachment", response.getFileName());
-        headers.setContentLength(response.getFileSize());
-        return new ResponseEntity<>(response.getFileContent(), headers, HttpStatus.OK);
+    @PostMapping("/export")
+    @PreAuthorize("hasAnyRole('Administrador', 'Profesor')")
+    public ResponseEntity<Map<String, String>> exportOperations(
+            @Valid @RequestBody ExportOperationsRestRequest restRequest,
+            HttpServletRequest httpServletRequest) {
+        ExportOperationsRequest request = operationRestMapper
+                .toExportOperationsRequest(restRequest, httpServletRequest);
+        String jobId = operationExportUseCase.execute(request);
+        return ResponseEntity.accepted().body(Map.of("jobId", jobId));
     }
 
 }

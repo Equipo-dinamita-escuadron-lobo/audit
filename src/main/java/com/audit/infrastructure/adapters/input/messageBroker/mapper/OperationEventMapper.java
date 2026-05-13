@@ -8,9 +8,9 @@ import org.springframework.stereotype.Component;
 import com.audit.application.dto.request.LogOperationRequest;
 import com.audit.domain.enums.OperationType;
 import com.audit.domain.enums.UserRole;
-import com.audit.domain.exceptions.InvalidAuditEventException;
 import com.audit.domain.model.OperationData;
 import com.audit.infrastructure.adapters.input.messageBroker.dto.OperationEventDto;
+import com.audit.infrastructure.adapters.output.exception.security.AuditMappingException;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -35,29 +35,29 @@ public class OperationEventMapper {
 
     private UserRole parseUserRole(String role) {
         if (role == null) {
-            throw new InvalidAuditEventException("User role cannot be null");
+            throw new AuditMappingException("User role cannot be null");
         }
         try {
             return UserRole.valueOf(role.trim().toUpperCase());
         } catch (IllegalArgumentException ex) {
-            throw new InvalidAuditEventException("Invalid user role received: " + role);
+            throw new AuditMappingException("Invalid user role received: " + role);
         }
     }
 
     private OperationType parseOperationType(String type) {
         if (type == null) {
-            throw new InvalidAuditEventException("Operation type cannot be null");
+            throw new AuditMappingException("Operation type cannot be null");
         }
         try {
             return OperationType.valueOf(type.trim().toUpperCase());
         } catch (IllegalArgumentException ex) {
-            throw new InvalidAuditEventException("Invalid operation type received: " + type);
+            throw new AuditMappingException("Invalid operation type received: " + type);
         }
     }
 
     private OperationData parseDataObject(Map<String, Object> dataMap, String operationType) {
         if (dataMap == null || dataMap.isEmpty()) {
-            throw new IllegalArgumentException("Data object cannot be null or empty");
+            throw new AuditMappingException("Data object cannot be null or empty");
         }
         OperationType opType = parseOperationType(operationType);
 
@@ -83,7 +83,7 @@ public class OperationEventMapper {
         Map<String, Map<String, Object>> changesMap = (Map<String, Map<String, Object>>) dataMap.get("changes");
 
         if (changesMap == null || changesMap.isEmpty()) {
-            throw new IllegalArgumentException("Update operation requires 'changes' field");
+            throw new AuditMappingException("Update operation requires 'changes' field");
         }
 
         Map<String, OperationData.FieldChange> fieldChanges = changesMap.entrySet().stream()

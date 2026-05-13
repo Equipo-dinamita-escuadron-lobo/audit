@@ -2,9 +2,15 @@ package com.audit.infrastructure.adapters.input.rest.dto.request;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import org.springframework.format.annotation.DateTimeFormat;
 
+import com.audit.domain.enums.ExportFormat;
 import com.audit.domain.enums.OperationType;
 import com.audit.domain.enums.UserRole;
 import com.audit.infrastructure.adapters.input.rest.validation.ValidateRange;
@@ -17,7 +23,8 @@ import java.time.ZonedDateTime;
 @AllArgsConstructor
 @Builder
 @ValidateRange
-public class ExportOperationsRestRequest implements DateRangeRequest{
+public class ExportOperationsRestRequest
+        implements DateRangeRequest {
 
     @NotNull(message = "Date from is required")
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
@@ -43,9 +50,17 @@ public class ExportOperationsRestRequest implements DateRangeRequest{
     @Size(max = 100, message = "Register ID must not exceed 100 characters")
     private String registerId;
 
-    @Builder.Default
-    private String sortField = "operationAt";
+    @NotNull(message = "Enterprise ID is required")
+    @Size(max = 100)
+    private String enterpriseId;
+
+    @NotNull(message = "Enterprise name is required")
+    @Size(max = 150)
+    private String enterpriseName;
+
+    @Size(max = 100)
+    private String requestedBy;
 
     @Builder.Default
-    private String sortDirection = "DESC";
+    private ExportFormat exportFormat = ExportFormat.EXCEL;
 }

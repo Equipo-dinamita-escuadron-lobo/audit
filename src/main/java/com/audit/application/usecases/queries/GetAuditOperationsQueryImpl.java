@@ -6,22 +6,22 @@ import org.springframework.transaction.annotation.Transactional;
 import com.audit.application.dto.request.GetOperationsRequest;
 import com.audit.application.dto.response.OperationAuditResponse;
 import com.audit.application.dto.response.PageResponse;
-import com.audit.application.internal.PageResult;
-import com.audit.application.internal.QueryOptions;
+import com.audit.application.internal.query.AuditOperationCriteria;
+import com.audit.application.internal.query.PageResult;
+import com.audit.application.internal.query.QueryOptions;
 import com.audit.application.port.input.queries.GetAuditOperationsQuery;
+import com.audit.application.port.output.AuditOperationQueryPort;
 import com.audit.domain.model.AuditOperation;
-import com.audit.domain.model.AuditOperationCriteria;
-import com.audit.domain.port.output.AuditOperationRepositoryPort;
 
 import java.util.List;
 
 @Service
 public class GetAuditOperationsQueryImpl implements GetAuditOperationsQuery {
 
-        private final AuditOperationRepositoryPort auditOperationRepositoryPort;
+        private final AuditOperationQueryPort queryPort;
 
-        public GetAuditOperationsQueryImpl(AuditOperationRepositoryPort auditOperationRepositoryPort) {
-                this.auditOperationRepositoryPort = auditOperationRepositoryPort;
+        public GetAuditOperationsQueryImpl(AuditOperationQueryPort queryPort) {
+                this.queryPort = queryPort;
         }
 
         @Override
@@ -46,27 +46,28 @@ public class GetAuditOperationsQueryImpl implements GetAuditOperationsQuery {
                                 .sortDirection(request.getSortDirection())
                                 .build();
 
-                PageResult<AuditOperation> pageResult = auditOperationRepositoryPort.findPageByCriteria(criteria,
+                PageResult<AuditOperation> pageResult = queryPort.findPageByCriteria(criteria,
                                 options);
 
                 List<OperationAuditResponse> operations = pageResult.getContent().stream()
-                        .map(this::toResponse)
-                        .toList();
+                                .map(this::toResponse)
+                                .toList();
 
-                return buildPageResponse(operations, pageResult.getTotalElements(), request.getPage(), request.getSize());
+                return buildPageResponse(operations, pageResult.getTotalElements(), request.getPage(),
+                                request.getSize());
         }
 
         private OperationAuditResponse toResponse(AuditOperation operation) {
                 return OperationAuditResponse.builder()
-                        .userName(operation.getUserName())
-                        .userRole(operation.getUserRole().name())
-                        .operationType(operation.getOperationType().name())
-                        .operationAt(operation.getOperationAt())
-                        .moduleName(operation.getModuleName())
-                        .affectedTable(operation.getAffectedTable())
-                        .registerId(operation.getRegisterId())
-                        .dataObject(operation.getDataObject())
-                        .build();
+                                .userName(operation.getUserName())
+                                .userRole(operation.getUserRole().name())
+                                .operationType(operation.getOperationType().name())
+                                .operationAt(operation.getOperationAt())
+                                .moduleName(operation.getModuleName())
+                                .affectedTable(operation.getAffectedTable())
+                                .registerId(operation.getRegisterId())
+                                .dataObject(operation.getDataObject())
+                                .build();
         }
 
         private PageResponse<OperationAuditResponse> buildPageResponse(

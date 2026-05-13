@@ -24,14 +24,6 @@ public class OperationRestMapper {
     public GetOperationsRequest toGetOperationsRequest(
             GetOperationsRestRequest restRequest,
             HttpServletRequest httpServletRequest) {
-        // Estos dos datos se extraen de la cabecera que es enviada desde el front
-        // Estrae el enterpriseId del header para filtrar por empresa
-        String enterpriseId = httpServletRequest.getHeader("X-Enterprise-Id");
-        if (enterpriseId == null || enterpriseId.isBlank()) {
-            throw new MissingHeaderException("X-Enterprise-Id header is required");
-        }
-        // Estrae el rol del usuario para saber si puede consultar esa informacion
-        String requestingUserRole = securityContextService.getCurrentUserRole();
         return GetOperationsRequest.builder()
                 .dateFrom(restRequest.getDateFrom().toInstant())
                 .dateTo(restRequest.getDateTo().toInstant())
@@ -41,12 +33,11 @@ public class OperationRestMapper {
                 .userRole(restRequest.getUserRole())
                 .operationType(restRequest.getOperationType())
                 .registerId(restRequest.getRegisterId())
-                .enterpriseId(enterpriseId)
+                .enterpriseId(restRequest.getEnterpriseId())
                 .page(restRequest.getPage())
                 .size(restRequest.getSize())
                 .sortField(restRequest.getSortField())
                 .sortDirection(restRequest.getSortDirection())
-                .requestingUserRole(requestingUserRole)
                 .build();
     }
 
@@ -54,14 +45,11 @@ public class OperationRestMapper {
             ExportOperationsRestRequest restRequest,
             HttpServletRequest httpRequest) {
 
-        String enterpriseId = httpRequest.getHeader("X-Enterprise-Id");
-        if (enterpriseId == null || enterpriseId.isBlank()) {
-            throw new MissingHeaderException("X-Enterprise-Id header is required");
-        }
-        String requestingUserRole = securityContextService.getCurrentUserRole();
+        String requestedBy = securityContextService.getCurrentUsername();
 
         return ExportOperationsRequest.builder()
-                .enterpriseId(enterpriseId)
+                .enterpriseId(restRequest.getEnterpriseId())
+                .enterpriseName(restRequest.getEnterpriseName())
                 .dateFrom(restRequest.getDateFrom().toInstant())
                 .dateTo(restRequest.getDateTo().toInstant())
                 .moduleName(restRequest.getModuleName())
@@ -70,9 +58,8 @@ public class OperationRestMapper {
                 .userRole(restRequest.getUserRole())
                 .operationType(restRequest.getOperationType())
                 .registerId(restRequest.getRegisterId())
-                .sortField(restRequest.getSortField())
-                .sortDirection(restRequest.getSortDirection())
-                .requestingUserRole(requestingUserRole)
+                .requestedBy(requestedBy)
+                .exportFormat(restRequest.getExportFormat())
                 .build();
     }
 

@@ -15,13 +15,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.domain.JpaSort;
 import org.springframework.stereotype.Component;
 
-import jakarta.persistence.criteria.Predicate;
-
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -29,138 +27,119 @@ import java.util.Set;
 @RequiredArgsConstructor
 @Slf4j
 public class AuditOperationRepositoryAdapter implements AuditOperationQueryPort,
-        AuditOperationRepositoryPort {
+                AuditOperationRepositoryPort {
 
-    private final IAuditOperationRepository auditOperationRepository;
-    private final AuditOperationJpaMapper mapper;
+        private final IAuditOperationRepository auditOperationRepository;
+        private final AuditOperationJpaMapper mapper;
 
-    @Override
-    public AuditOperation save(AuditOperation auditOperation) {
-        AuditOperationEntity entity = mapper.toEntity(auditOperation);
-        AuditOperationEntity saved = auditOperationRepository.save(entity);
-        return mapper.toDomain(saved);
-    }
-
-    @Override
-    public PageResult<AuditOperation> findPageByCriteria(AuditOperationCriteria criteria, QueryOptions options) {
-        Specification<AuditOperationEntity> spec = buildSpecification(criteria);
-        Sort sort = buildSort(options);
-        PageRequest pageRequest = PageRequest.of(options.getPage(), options.getSize(), sort);
-        Page<AuditOperationEntity> page = auditOperationRepository.findAll(spec, pageRequest);
-        List<AuditOperation> content = page.getContent().stream()
-                .map(mapper::toDomain)
-                .toList();
-        return new PageResult<>(content, page.getTotalElements());
-    }
-
-    @Override
-    public Optional<AuditOperation> findById(Long id) {
-        return auditOperationRepository.findById(id)
-                .map(mapper::toDomain);
-    }
-
-    @Override
-    public List<ModuleTable> findDistinctModulesAndTables(String enterpriseId) {
-        return auditOperationRepository.findDistinctModulesAndTables(enterpriseId)
-                .stream()
-                .map(p -> new ModuleTable(
-                        p.getModuleName(),
-                        p.getAffectedTable()))
-                .toList();
-    }
-
-    @Override
-    public Optional<AuditOperation> findByRegisterId(String registerId, String affectedTable) {
-        return auditOperationRepository.findByRegisterIdAndAffectedTable(registerId, affectedTable)
-                .map(mapper::toDomain);
-    }
-
-    /**
-     * Se construye la especificacion con todos los filtros
-     */
-    private Specification<AuditOperationEntity> buildSpecification(AuditOperationCriteria criteria) {
-        return (root, query, criteriaBuilder) -> {
-            List<Predicate> predicates = new ArrayList<>();
-
-            if (criteria.getEnterpriseId() != null) {
-                predicates.add(criteriaBuilder.equal(
-                        root.get("enterpriseId"), criteria.getEnterpriseId()));
-            }
-
-            if (criteria.getDateFrom() != null) {
-                predicates.add(criteriaBuilder.greaterThanOrEqualTo(
-                        root.get("operationAt"), criteria.getDateFrom()));
-            }
-
-            if (criteria.getDateTo() != null) {
-                predicates.add(criteriaBuilder.lessThanOrEqualTo(
-                        root.get("operationAt"), criteria.getDateTo()));
-            }
-
-            if (criteria.hasModuleNameCriteria()) {
-                predicates.add(criteriaBuilder.equal(
-                        root.get("moduleName"), criteria.getModuleName()));
-            }
-
-            if (criteria.hasAffectedTableCriteria()) {
-                predicates.add(criteriaBuilder.equal(
-                        root.get("affectedTable"), criteria.getAffectedTable()));
-            }
-
-            if (criteria.hasUserNameCriteria()) {
-                String searchTerm = criteria.getUserName().toLowerCase().trim();
-                if (searchTerm.length() < 3) {
-                    throw new IllegalArgumentException("userName filter must be at least 3 characters");
-                }
-                predicates.add(criteriaBuilder.like(
-                        criteriaBuilder.lower(root.get("userName")),
-                        searchTerm + "%"));
-            }
-
-            if (criteria.hasUserRoleCriteria()) {
-                predicates.add(criteriaBuilder.equal(
-                        root.get("userRole"), criteria.getUserRole()));
-            }
-
-            if (criteria.hasOperationTypeCriteria()) {
-                predicates.add(criteriaBuilder.equal(
-                        root.get("operationType"), criteria.getOperationType()));
-            }
-            return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
-        };
-    }
-
-    private Sort buildSort(QueryOptions options) {
-        String sortField = options.getSortField() != null ? options.getSortField() : "operationAt";
-        String sortDirection = options.getSortDirection() != null ? options.getSortDirection() : "DESC";
-
-        Set<String> allowedFields = Set.of(
-                "operationAt", "userName", "userRole",
-                "operationType", "moduleName", "affectedTable");
-
-        if (!allowedFields.contains(sortField)) {
-            sortField = "operationAt";
+        @Override
+        public AuditOperation save(AuditOperation auditOperation) {
+                AuditOperationEntity entity = mapper.toEntity(auditOperation);
+                AuditOperationEntity saved = auditOperationRepository.save(entity);
+                return mapper.toDomain(saved);
         }
 
-        Sort.Direction direction = "ASC".equalsIgnoreCase(sortDirection)
-                ? Sort.Direction.ASC
-                : Sort.Direction.DESC;
+        @Override
+        public PageResult<AuditOperation> findPageByCriteria(AuditOperationCriteria criteria, QueryOptions options) {
+                Sort sort = buildSort(options);
+                PageRequest pageRequest = PageRequest.of(options.getPage(), options.getSize(), sort);
 
-        return Sort.by(direction, sortField);
-    }
+                Page<AuditOperationEntity> page = auditOperationRepository.findByFilters(
+                                criteria.getEnterpriseId(),
+                                criteria.getDateFrom(),
+                                criteria.getDateTo(),
+                                criteria.getModuleName(),
+                                criteria.getAffectedTable(),
+                                criteria.getUserName(),
+                                criteria.getOperationType() != null ? criteria.getOperationType().name() : null,
+                                criteria.getUserRole(),
+                                pageRequest);
 
-    @Override
-    public long countByCriteria(AuditOperationCriteria filter) {
-        Specification<AuditOperationEntity> spec = buildSpecification(filter);
-        return auditOperationRepository.count(spec);
-    }
+                List<AuditOperation> content = page.getContent().stream()
+                                .map(mapper::toDomain)
+                                .toList();
 
-    @Override
-    public List<AuditOperation> findAllForExport(AuditOperationCriteria criteria) {
-        Specification<AuditOperationEntity> spec = buildSpecification(criteria);
-        return auditOperationRepository.findAll(spec)
-                .stream()
-                .map(mapper::toDomain)
-                .toList();
-    }
+                return new PageResult<>(content, page.getTotalElements());
+        }
+
+        @Override
+        public Optional<AuditOperation> findById(Long id) {
+                return auditOperationRepository.findById(id)
+                                .map(mapper::toDomain);
+        }
+
+        @Override
+        public List<ModuleTable> findDistinctModulesAndTables(String enterpriseId) {
+                return auditOperationRepository.findDistinctModulesAndTables(enterpriseId)
+                                .stream()
+                                .map(p -> new ModuleTable(
+                                                p.getModuleName(),
+                                                p.getAffectedTable()))
+                                .toList();
+        }
+
+        @Override
+        public Optional<AuditOperation> findByRegisterId(String registerId, String affectedTable) {
+                return auditOperationRepository.findByRegisterIdAndAffectedTable(registerId, affectedTable)
+                                .map(mapper::toDomain);
+        }
+
+        @Override
+        public long countByCriteria(AuditOperationCriteria filter) {
+                return auditOperationRepository.findByFilters(
+                                filter.getEnterpriseId(),
+                                filter.getDateFrom(),
+                                filter.getDateTo(),
+                                filter.getModuleName(),
+                                filter.getAffectedTable(),
+                                filter.getUserName(),
+                                filter.getOperationType() != null ? filter.getOperationType().name() : null,
+                                filter.getUserRole(),
+                                PageRequest.of(0, 1))
+                                .getTotalElements();
+        }
+
+        @Override
+        public List<AuditOperation> findAllForExport(AuditOperationCriteria criteria) {
+                return auditOperationRepository.findAllForExport(
+                                criteria.getEnterpriseId(),
+                                criteria.getDateFrom(),
+                                criteria.getDateTo(),
+                                criteria.getModuleName(),
+                                criteria.getAffectedTable(),
+                                criteria.getUserName(),
+                                criteria.getOperationType() != null ? criteria.getOperationType().name() : null,
+                                criteria.getUserRole())
+                                .stream()
+                                .map(mapper::toDomain)
+                                .toList();
+        }
+
+        private Sort buildSort(QueryOptions options) {
+                String sortField = options.getSortField() != null ? options.getSortField() : "operationAt";
+                String sortDirection = options.getSortDirection() != null ? options.getSortDirection() : "DESC";
+
+                Set<String> allowedFields = Set.of(
+                                "operationAt", "userName",
+                                "operationType", "moduleName", "affectedTable");
+
+                if (!allowedFields.contains(sortField)) {
+                        sortField = "operationAt";
+                }
+
+                Map<String, String> fieldToColumn = Map.of(
+                                "operationAt", "operation_at",
+                                "userName", "user_name",
+                                "operationType", "operation_type",
+                                "moduleName", "module_name",
+                                "affectedTable", "affected_table");
+
+                String columnName = fieldToColumn.getOrDefault(sortField, "operation_at");
+
+                Sort.Direction direction = "ASC".equalsIgnoreCase(sortDirection)
+                                ? Sort.Direction.ASC
+                                : Sort.Direction.DESC;
+
+                return JpaSort.unsafe(direction, columnName);
+        }
 }

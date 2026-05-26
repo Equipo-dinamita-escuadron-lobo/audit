@@ -4,7 +4,6 @@ import java.time.Instant;
 
 import com.audit.domain.enums.ExportFormat;
 import com.audit.domain.enums.UserAction;
-import com.audit.domain.enums.UserRole;
 
 import lombok.Builder;
 import lombok.Getter;
@@ -20,7 +19,7 @@ public class ExportSessionsRequest {
     private Instant dateFrom;
     private Instant dateTo;
     private String userName;
-    private UserRole userRole;
+    private String userRole;
     private UserAction action;
     private ExportFormat exportFormat;
 }

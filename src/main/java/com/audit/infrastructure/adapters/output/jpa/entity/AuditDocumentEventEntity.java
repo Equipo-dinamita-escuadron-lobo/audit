@@ -67,7 +67,7 @@ public class AuditDocumentEventEntity {
     private String userName;
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "user_roles", columnDefinition = "json", nullable = false)
+    @Column(name = "user_roles", columnDefinition = "jsonb", nullable = false)
     private List<String> userRoles;
 
     @Enumerated(EnumType.STRING)

@@ -1,8 +1,8 @@
 package com.audit.application.internal;
 
 import java.time.Instant;
+import java.util.List;
 
-import com.audit.domain.enums.UserRole;
 import com.audit.domain.exceptions.InvalidAuditEventException;
 
 import lombok.Getter;
@@ -11,12 +11,12 @@ import lombok.Getter;
 public class CombinedSession {
     private final String sessionId;
     private final String userName;
-    private final UserRole userRole;
+    private final List<String> userRole;
     private final Instant loginTime;
     private final Instant logoutTime;
 
     private CombinedSession(String sessionId, String userName,
-            UserRole userRole, Instant loginTime, Instant logoutTime) {
+            List<String> userRole, Instant loginTime, Instant logoutTime) {
         this.sessionId = sessionId;
         this.userName = userName;
         this.userRole = userRole;
@@ -25,7 +25,7 @@ public class CombinedSession {
     }
 
     public static CombinedSession of(String sessionId, String userName,
-            UserRole userRole, Instant loginTime, Instant logoutTime) {
+            List<String> userRole, Instant loginTime, Instant logoutTime) {
         if (sessionId == null || sessionId.isBlank())
             throw new InvalidAuditEventException("Session ID required");
         if (loginTime == null)

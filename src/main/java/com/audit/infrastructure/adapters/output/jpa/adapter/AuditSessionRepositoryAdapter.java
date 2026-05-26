@@ -15,13 +15,13 @@ import com.audit.application.internal.query.AuditSessionCriteria;
 import com.audit.application.internal.query.PageResult;
 import com.audit.application.internal.query.QueryOptions;
 import com.audit.application.port.output.AuditSessionQueryPort;
-import com.audit.domain.enums.UserRole;
 import com.audit.domain.model.AuditSession;
 import com.audit.domain.port.output.AuditSessionRepositoryPort;
 import com.audit.infrastructure.adapters.output.jpa.entity.AuditSessionEntity;
 import com.audit.infrastructure.adapters.output.jpa.mapper.AuditSessionJpaMapper;
 import com.audit.infrastructure.adapters.output.jpa.projection.SessionProjection;
 import com.audit.infrastructure.adapters.output.jpa.repository.IAuditSessionRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.List;
 import java.util.Optional;
@@ -35,6 +35,7 @@ public class AuditSessionRepositoryAdapter implements AuditSessionQueryPort,
 
     private final IAuditSessionRepository auditSessionRepository;
     private final AuditSessionJpaMapper mapper;
+    private final ObjectMapper objectMapper;
 
     @Override
     public AuditSession save(AuditSession auditSession) {
@@ -61,7 +62,7 @@ public class AuditSessionRepositoryAdapter implements AuditSessionQueryPort,
                 filter.getDateFrom(),
                 filter.getDateTo(),
                 sanitizedUserName,
-                filter.getUserRole() != null ? filter.getUserRole().name() : null,
+                filter.getUserRole() != null ? filter.getUserRole() : null,
                 pageable);
         List<CombinedSession> sessions = page.getContent().stream()
                 .map(this::projectionToDomain)
@@ -73,7 +74,7 @@ public class AuditSessionRepositoryAdapter implements AuditSessionQueryPort,
         String sortField = options.getSortField() != null ? options.getSortField() : "loginTime";
         String sortDirection = options.getSortDirection() != null ? options.getSortDirection() : "DESC";
 
-        Set<String> allowedFields = Set.of("loginTime", "logoutTime", "userName", "userRole");
+        Set<String> allowedFields = Set.of("loginTime", "logoutTime", "userName");
         if (!allowedFields.contains(sortField)) {
             sortField = "loginTime";
         }
@@ -90,10 +91,11 @@ public class AuditSessionRepositoryAdapter implements AuditSessionQueryPort,
     }
 
     private CombinedSession projectionToDomain(SessionProjection projection) {
+        List<String> roles = parseRolesFromJson(projection.getUserRole());
         return CombinedSession.of(
                 projection.getSessionId(),
                 projection.getUserName(),
-                UserRole.valueOf(projection.getUserRole()),
+                roles,
                 projection.getLoginTime(),
                 projection.getLogoutTime());
     }
@@ -110,13 +112,26 @@ public class AuditSessionRepositoryAdapter implements AuditSessionQueryPort,
         return sanitized;
     }
 
+    private List<String> parseRolesFromJson(String userRoleJson) {
+        if (userRoleJson == null || userRoleJson.isBlank()) {
+            return List.of();
+        }
+        try {
+            return objectMapper.readValue(userRoleJson,
+                    objectMapper.getTypeFactory().constructCollectionType(List.class, String.class));
+        } catch (Exception e) {
+            log.warn("Could not parse user roles from JSON: {}", userRoleJson);
+            return List.of();
+        }
+    }
+
     @Override
     public long countByCriteria(AuditSessionCriteria filter) {
         return auditSessionRepository.countCombinedSessions(
                 filter.getDateFrom(),
                 filter.getDateTo(),
                 sanitizeUserName(filter.getUserName()),
-                filter.getUserRole() != null ? filter.getUserRole().name() : null);
+                filter.getUserRole() != null ? filter.getUserRole() : null);
     }
 
     @Override
@@ -125,7 +140,7 @@ public class AuditSessionRepositoryAdapter implements AuditSessionQueryPort,
                 criteria.getDateFrom(),
                 criteria.getDateTo(),
                 sanitizeUserName(criteria.getUserName()),
-                criteria.getUserRole() != null ? criteria.getUserRole().name() : null)
+                criteria.getUserRole() != null ? criteria.getUserRole() : null)
                 .stream()
                 .map(this::projectionToDomain)
                 .toList();

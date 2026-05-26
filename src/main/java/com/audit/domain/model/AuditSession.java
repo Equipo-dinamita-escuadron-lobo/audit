@@ -1,9 +1,9 @@
 package com.audit.domain.model;
 
 import java.time.Instant;
+import java.util.List;
 
 import com.audit.domain.enums.UserAction;
-import com.audit.domain.enums.UserRole;
 import com.audit.domain.exceptions.InvalidAuditEventException;
 
 import lombok.Getter;
@@ -19,7 +19,7 @@ public class AuditSession {
     private final String sessionId;
     private final String userId;
     private final String userName;
-    private final UserRole userRole;
+    private final List<String> userRole;
     private final UserAction action;
     private final Instant actionAt;
     private final String ipAddress;
@@ -29,7 +29,7 @@ public class AuditSession {
     /**
      * Private constructor to enforce the use of the factory method
      */
-    private AuditSession(Long id, String sessionId, String userId, String userName, UserRole userRole,
+    private AuditSession(Long id, String sessionId, String userId, String userName, List<String> userRole,
             UserAction action,
             Instant actionAt, String ipAddress, Instant createdAt) {
         this.id = id;
@@ -47,7 +47,7 @@ public class AuditSession {
     /**
      * Factory method to create a new AuditSession instance with validation
      */
-    public static AuditSession create(String sessionId, String userId, String userName, UserRole userRole,
+    public static AuditSession create(String sessionId, String userId, String userName, List<String> userRole,
             UserAction action,
             Instant actionAt, String ipAddress) {
 
@@ -65,7 +65,8 @@ public class AuditSession {
     /**
      * Factory method to reconstruct an existing AuditSession instance
      */
-    public static AuditSession reconstruct(Long id, String sessionId, String userId, String userName, UserRole userRole,
+    public static AuditSession reconstruct(Long id, String sessionId, String userId, String userName,
+            List<String> userRole,
             UserAction action,
             Instant actionAt, String ipAddress, Instant createdAt) {
 
@@ -74,7 +75,7 @@ public class AuditSession {
     }
 
     // Private validation methods
-    private static void validateUserData(String userId, String userName, UserRole userRole) {
+    private static void validateUserData(String userId, String userName, List<String> userRole) {
         if (userId == null || userId.trim().isEmpty()) {
             throw new InvalidAuditEventException("User ID cannot be null or empty");
         }
@@ -83,8 +84,8 @@ public class AuditSession {
             throw new InvalidAuditEventException("User name cannot be null or empty");
         }
 
-        if (userRole == null) {
-            throw new InvalidAuditEventException("User role cannot be null");
+        if (userRole == null || userRole.isEmpty()) {
+            throw new InvalidAuditEventException("User role cannot be null or empty");
         }
     }
 

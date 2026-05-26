@@ -85,7 +85,7 @@ public class OperationAsyncExportAdapter implements IOperationAsyncExportPort {
         if (request.getUserName() != null && !request.getUserName().isBlank())
             filters.append("Usuario: ").append(request.getUserName()).append("; ");
         if (request.getUserRole() != null)
-            filters.append("Rol: ").append(request.getUserRole().name()).append("; ");
+            filters.append("Rol: ").append(request.getUserRole()).append("; ");
         if (request.getOperationType() != null)
             filters.append("Tipo operación: ").append(AuditOperationTranslationHelper.translateOperation(
                     request.getOperationType().name())).append("; ");

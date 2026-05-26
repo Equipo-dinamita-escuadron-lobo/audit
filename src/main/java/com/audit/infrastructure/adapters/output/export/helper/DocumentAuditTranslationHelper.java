@@ -2,125 +2,153 @@ package com.audit.infrastructure.adapters.output.export.helper;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public final class DocumentAuditTranslationHelper {
 
-    private static final Map<String, String> OPERATION_LABELS = Map.of(
-            "CREATE", "Creación",
-            "UPDATE", "Actualización",
-            "APPROVE", "Aprobación",
-            "VOID", "Anulación",
-            "DELETE", "Eliminación");
+    private DocumentAuditTranslationHelper() {
+    }
 
-    private static final Map<String, String> FACTURE_TYPE_LABELS = Map.of(
-            "PURCHASE", "Compra",
-            "SALE", "Venta",
-            "RETURN_ON_SALE", "Devolución en venta",
-            "RETURN_ON_PURCHASE", "Devolución en compra",
-            "NON_COMMERCIAL_ENTRY", "Entrada no comercial",
-            "NON_COMMERCIAL_EXIT", "Salida no comercial");
+    private static final Set<String> HIDDEN_FIELDS = Set.of(
+            "id",
+            "entId",
+            "documentId",
+            "parentId");
 
-    private static final Map<String, String> RETURN_TYPE_LABELS = Map.of(
-            "RETURN_ON_SALE", "Devolución en venta",
-            "RETURN_ON_PURCHASE", "Devolución en compra");
+    private static final Map<String, String> FIELD_LABELS = Map.ofEntries(
 
-    private static final Map<String, String> MODULE_LABELS = Map.of(
-            "WALLET", "Cartera",
-            "INVOICES", "Facturas",
-            "TREASURY", "Tesorería",
-            "ACCOUNTING", "Contabilidad");
+            // Receipt
+            Map.entry("receiptCode", "Código recibo"),
+            Map.entry("receiptType", "Tipo recibo"),
+            Map.entry("paymentMethodId", "Método de pago"),
+            Map.entry("paymentMethodAccount", "Cuenta método de pago"),
+            Map.entry("thirdPartName", "Nombre tercero"),
+            Map.entry("thirdPartyName", "Nombre tercero"),
+            Map.entry("thirdPartyId", "Id tercero"),
+            Map.entry("thirdId", "Id tercero"),
+            Map.entry("issueDate", "Fecha emisión"),
+            Map.entry("observations", "Observaciones"),
+            Map.entry("ledgerAccountId", "Cuenta contable"),
+            Map.entry("centerCostId", "Id centro de costo"),
+            Map.entry("costCenterId", "Id centro de costo"),
 
-    // ── Configuración de inventario ───────────────────────────────
-    private static final Map<String, String> INVENTORY_CONFIG_LABELS = Map.of(
-            "PEPS", "PEPS (Primeras en entrar, primeras en salir)",
-            "WEIGHTED_AVERAGE", "Promedio ponderado");
+            Map.entry("code", "Código"),
+            Map.entry("justification", "Justificación"),
+            Map.entry("writeOffDate", "Fecha castigo"),
+            Map.entry("status", "Estado"),
+            Map.entry("debitAuxiliaryAccount", "Cuenta auxiliar débito"),
 
-    private static final Map<String, String> HEADER_FIELD_LABELS = Map.ofEntries(
-            Map.entry("factureType", "Tipo de documento"),
-            Map.entry("expirationDate", "Fecha de vencimiento"),
             Map.entry("accountingAccount", "Cuenta contable"),
-            Map.entry("documentCode", "Código documento"),
-            Map.entry("originalFactCode", "Código documento original"),
-            Map.entry("returnType", "Tipo de devolución"),
-            Map.entry("voidedDocument", "Documento anulado"));
+            Map.entry("invoiceId", "Id factura"),
+            Map.entry("invoiceCode", "Código factura"),
 
-    private static final Map<String, String> DETAIL_FIELD_LABELS = Map.ofEntries(
-            Map.entry("productId", "ID Producto"),
+            Map.entry("amountPaid", "Valor pagado"),
+            Map.entry("amountReversed", "Valor reversado"),
+
+            Map.entry("amountWrittenOff", "Valor castigado"),
+
+            Map.entry("totalAmount", "Valor total"),
+            Map.entry("totalAmountReversed", "Valor total reversado"),
+            Map.entry("totalAmountRestored", "Valor restaurado"),
+
+            Map.entry("operationType", "Tipo operación"),
+            Map.entry("documentSubtype", "Subtipo documento"),
+            Map.entry("affectsInvoices", "Afecta facturas"),
+
+            Map.entry("invoiceStatus", "Estado factura"),
+            Map.entry("pendingValue", "Saldo pendiente"),
+
+            Map.entry("factCode", "Código factura"),
+            Map.entry("factureType", "Tipo factura"),
+            Map.entry("expirationDate", "Fecha vencimiento"),
+
+            Map.entry("productId", "Producto"),
             Map.entry("description", "Descripción"),
             Map.entry("amount", "Cantidad"),
-            Map.entry("unitPrice", "Precio unitario"),
-            Map.entry("discount", "Descuento (%)"),
-            Map.entry("taxPercentage", "Impuesto (%)"),
-            Map.entry("subtotal", "Subtotal"),
             Map.entry("quantity", "Cantidad"),
-            Map.entry("reason", "Motivo de devolución"));
+            Map.entry("unitPrice", "Precio unitario"),
+            Map.entry("discount", "Descuento"),
+            Map.entry("taxPercentage", "Impuesto"),
+            Map.entry("subtotal", "Subtotal"),
 
-    private static final Map<String, String> TOTALS_FIELD_LABELS = Map.of(
-            "totalValue", "Valor total",
-            "totalPay", "Total a pagar",
-            "pendingValue", "Valor pendiente",
-            "totalDiscount", "Total descuentos",
-            "totalTax", "Total impuestos");
+            Map.entry("totalValue", "Valor total"),
+            Map.entry("totalPay", "Valor pagado"),
 
-    private static final Map<String, String> METADATA_FIELD_LABELS = Map.of(
-            "productCount", "Cantidad de productos",
-            "inventoryConfig", "Configuración de inventario",
-            "paymentMethod", "Método de pago",
-            "documentStatus", "Estado del documento",
-            "voidedDocument", "Documento anulado");
+            Map.entry("originalFactCode", "Factura origen"),
+            Map.entry("returnType", "Tipo devolución"),
+            Map.entry("reason", "Motivo"),
 
-    public static String translateOperation(String value) {
-        return OPERATION_LABELS.getOrDefault(value, value);
-    }
+            Map.entry("documentCode", "Código documento"),
+            Map.entry("voidedDocument", "Documento anulado"));
 
-    public static String translateModule(String value) {
-        return MODULE_LABELS.getOrDefault(value, value);
-    }
+    private static final Map<String, String> VALUE_LABELS = Map.ofEntries(
 
-    public static String translateHeaderField(String key) {
-        return HEADER_FIELD_LABELS.getOrDefault(key, key);
-    }
+            Map.entry("INVOICE_PAYMENT", "Pago de factura"),
+            Map.entry("DIRECT_INCOME", "Ingreso directo"),
 
-    public static String translateDetailField(String key) {
-        return DETAIL_FIELD_LABELS.getOrDefault(key, key);
-    }
+            Map.entry("PENDING_CONFIRMATION", "Pendiente confirmación"),
+            Map.entry("CONFIRMED", "Confirmado"),
+            Map.entry("VOIDED", "Anulado"),
 
-    public static String translateTotalsField(String key) {
-        return TOTALS_FIELD_LABELS.getOrDefault(key, key);
-    }
+            Map.entry("PENDING", "Pendiente"),
+            Map.entry("PAID", "Pagado"),
+            Map.entry("PENDING_WRITTEN_OFF", "Pendiente castigo"),
+            Map.entry("WRITTEN_OFF", "Castigado"),
 
-    public static String translateMetadataField(String key) {
-        return METADATA_FIELD_LABELS.getOrDefault(key, key);
-    }
+            Map.entry("CREATE", "Creación"),
+            Map.entry("APPROVE", "Aprobación"),
+            Map.entry("UPDATE", "Actualización"),
+            Map.entry("VOID", "Anulación"),
+            Map.entry("DELETE", "Eliminación"),
 
-    public static String translateFactureType(String value) {
-        return FACTURE_TYPE_LABELS.getOrDefault(value, value);
-    }
+            Map.entry("PURCHASE", "Factura Compra"),
+            Map.entry("SALE", "Factura Venta"),
+            Map.entry("RETURN_ON_SALE", "Devolución en venta"),
+            Map.entry("RETURN_ON_PURCHASE", "Devolución en compra"),
+            Map.entry("NON_COMMERCIAL_ENTRY", "Entrada no comercial"),
+            Map.entry("NON_COMMERCIAL_EXIT", "Salida no comercial"),
+            Map.entry("RECEIPT_INVOICE_PAYMENT", "Recibo de caja"),
+            Map.entry("RECEIPT_DIRECT_INCOME", "Recibo de caja"),
+            Map.entry("WRITE_OFF", "Castigo Cartera"),
 
-    public static String translateReturnType(String value) {
-        return RETURN_TYPE_LABELS.getOrDefault(value, value);
-    }
+            Map.entry("PEPS", "PEPS"),
+            Map.entry("WEIGHTED_AVERAGE", "Promedio ponderado"),
 
-    public static String translateInventoryConfig(String value) {
-        return INVENTORY_CONFIG_LABELS.getOrDefault(value, value);
-    }
+            Map.entry("true", "Sí"),
+            Map.entry("false", "No"),
 
-    public static String translateBoolean(Boolean value) {
-        if (value == null)
-            return "—";
-        return value ? "Activo" : "Inactivo";
+            Map.entry("WALLET", "Cartera"),
+            Map.entry("INVOICES", "Facturas"),
+            Map.entry("TREASURY", "Tesorería"),
+            Map.entry("ACCOUNTING", "Contabilidad"));
+
+    public static String translateField(String key) {
+        return FIELD_LABELS.getOrDefault(key, key);
     }
 
     public static String translateValue(Object value) {
-        if (value == null)
+
+        if (value == null) {
             return "—";
-        if (value instanceof Boolean b)
-            return translateBoolean(b);
+        }
+
+        if (value instanceof Boolean b) {
+            return b ? "Sí" : "No";
+        }
+
         if (value instanceof List<?> list) {
             return list.stream()
-                    .map(v -> v == null ? "—" : String.valueOf(v))
-                    .collect(java.util.stream.Collectors.joining(", "));
+                    .map(DocumentAuditTranslationHelper::translateValue)
+                    .collect(Collectors.joining(", "));
         }
-        return String.valueOf(value);
+
+        return VALUE_LABELS.getOrDefault(
+                String.valueOf(value),
+                String.valueOf(value));
+    }
+
+    public static boolean isVisibleField(String key) {
+        return !HIDDEN_FIELDS.contains(key);
     }
 }

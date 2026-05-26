@@ -18,7 +18,9 @@ public final class AuditOperationTranslationHelper {
             Map.entry("COST_CENTERS", "Centros de costo"),
             Map.entry("TYPE_OF_DOCUMENTS", "Tipos de documento"),
             Map.entry("NO_COMMERCIAL_TAGS", "Etiquetas"),
-            Map.entry("TAXES", "Impuestos"));
+            Map.entry("TAXES", "Impuestos"),
+            Map.entry("ENTERPRISES", "Empresas"),
+            Map.entry("CONFIGURATION", "Configuración"));
 
     private static final Map<String, String> TABLE_LABELS = Map.ofEntries(
             Map.entry("ACCOUNT_CATALOGUE", "Catálogo de cuentas"),
@@ -36,7 +38,12 @@ public final class AuditOperationTranslationHelper {
             Map.entry("PRODUCT_TYPE", "Tipo de producto"),
             Map.entry("CATEGORY", "Categoría"),
             Map.entry("UNIT_OF_MEASURE", "Unidad de medida"),
-            Map.entry("NO_COMMERCIAL_TAG", "Etiqueta no comercial"));
+            Map.entry("NO_COMMERCIAL_TAG", "Etiqueta no comercial"),
+            Map.entry("ENTERPRISE", "Empresa"),
+            Map.entry("SUBJECT", "Materia"),
+            Map.entry("USER", "Usuario"),
+            Map.entry("PROFILE", "Perfil"),
+            Map.entry("PERMISSION", "Permiso"));
 
     private static final Map<String, String> OPERATION_LABELS = Map.of(
             "CREATE", "Creación",

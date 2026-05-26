@@ -46,7 +46,7 @@ public class DocumentExcelGenerator {
 
             Sheet sheet = workbook.createSheet("Auditoría Documentos");
 
-            // ── Estilos creados UNA sola vez — se reusan en todas las filas ──
+            // Estilos creados una sola vez, se reusan en todas las filas
             CellStyle titleStyle = styleHelper.getTitleStyle(workbook);
             CellStyle headerStyle = styleHelper.getHeaderStyle(workbook);
             CellStyle dataStyle = styleHelper.getDataCellStyle(workbook);
@@ -54,7 +54,7 @@ public class DocumentExcelGenerator {
 
             int rowIdx = 0;
 
-            // ── Metadata ──────────────────────────────────────────────────────
+            // Metadata
             Row titleRow = sheet.createRow(rowIdx++);
             Cell titleCell = titleRow.createCell(0);
             titleCell.setCellValue("Auditoría de Eventos de Documentos");
@@ -70,7 +70,7 @@ public class DocumentExcelGenerator {
 
             rowIdx++; // fila vacía de separación
 
-            // ── Encabezado de tabla ───────────────────────────────────────────
+            // Encabezado de tabla
             Row headerRow = sheet.createRow(rowIdx++);
             for (int i = 0; i < HEADERS.length; i++) {
                 Cell cell = headerRow.createCell(i);
@@ -78,18 +78,18 @@ public class DocumentExcelGenerator {
                 cell.setCellStyle(headerStyle);
             }
 
-            // ── Datos ─────────────────────────────────────────────────────────
+            // Datos
             for (AuditDocumentEvent event : events) {
                 Row row = sheet.createRow(rowIdx++);
                 fillRow(row, event, dataStyle, wrapStyle);
             }
 
-            // ── Anchos de columna ─────────────────────────────────────────────
+            // Anchos de columna
             // Columnas de datos básicos: autoSize
             for (int i = 0; i <= 8; i++) {
                 sheet.autoSizeColumn(i);
             }
-            // Columnas de snapshot: ancho fijo (no autoSize — el JSON es largo)
+            // Columnas de snapshot: ancho fijo
             sheet.setColumnWidth(9, 14000); // Encabezado
             sheet.setColumnWidth(10, 14000); // Detalle
             sheet.setColumnWidth(11, 8000); // Totales
@@ -106,30 +106,23 @@ public class DocumentExcelGenerator {
             CellStyle dataStyle, CellStyle wrapStyle) {
 
         createCell(row, 0, event.getDocumentCode(), dataStyle);
-        createCell(row, 1, event.getDocumentType(), dataStyle);
+        createCell(row, 1, translate(event.getDocumentType()), dataStyle);
         createCell(row, 2, event.getThirdPartyName(), dataStyle);
-        createCell(row, 3,
-                event.getDocumentDate() != null ? event.getDocumentDate().toString() : "",
-                dataStyle);
+        createCell(row, 3, event.getDocumentDate() != null
+                ? event.getDocumentDate().toString()
+                : "", dataStyle);
         createCell(row, 4, event.getUserName(), dataStyle);
-        createCell(row, 5,
-                event.getUserRoles() != null ? String.join(", ", event.getUserRoles()) : "",
-                dataStyle);
-        createCell(row, 6,
-                event.getOperationType() != null
-                        ? DocumentAuditTranslationHelper.translateOperation(event.getOperationType().name())
-                        : "",
-                dataStyle);
-        createCell(row, 7,
-                event.getOperationAt() != null ? DATE_FORMATTER.format(event.getOperationAt()) : "",
-                dataStyle);
-        createCell(row, 8,
-                event.getModuleName() != null
-                        ? DocumentAuditTranslationHelper.translateModule(event.getModuleName())
-                        : "",
-                dataStyle);
+        createCell(row, 5, event.getUserRoles() != null
+                ? String.join(", ", event.getUserRoles())
+                : "", dataStyle);
+        createCell(row, 6, event.getOperationType() != null
+                ? translate(event.getOperationType().name())
+                : "", dataStyle);
+        createCell(row, 7, event.getOperationAt() != null
+                ? DATE_FORMATTER.format(event.getOperationAt())
+                : "", dataStyle);
+        createCell(row, 8, translate(event.getModuleName()), dataStyle);
 
-        // Snapshot descompuesto por secciones
         if (event.getDocumentData() != null) {
             DocumentData data = event.getDocumentData();
             setTextCell(row, 9, formatHeader(data.getHeader()), wrapStyle);
@@ -143,58 +136,168 @@ public class DocumentExcelGenerator {
         row.setHeightInPoints(80);
     }
 
+    @SuppressWarnings("unchecked")
     private String formatHeader(Map<String, Object> header) {
         if (isEmpty(header))
             return "";
         StringBuilder sb = new StringBuilder();
         header.forEach((key, value) -> {
-            if (value == null || value.toString().isBlank())
+            if ("changes".equals(key))
                 return;
-            sb.append(DocumentAuditTranslationHelper.translateHeaderField(key))
+            if (!isVisible(key))
+                return;
+            if (isBlankValue(value))
+                return;
+            sb.append(fieldLabel(key))
                     .append(": ")
-                    .append(DocumentAuditTranslationHelper.translateValue(value))
+                    .append(valueLabel(value))
                     .append("\n");
         });
+        Object changesObj = header.get("changes");
+        if (changesObj instanceof Map) {
+            Map<String, Object> changes = (Map<String, Object>) changesObj;
+            if (!changes.isEmpty()) {
+                if (!sb.isEmpty())
+                    sb.append("\n");
+                sb.append("Cambios:\n");
+                appendChanges(sb, changes);
+            }
+        }
+
         return sb.toString().trim();
     }
 
+    @SuppressWarnings("unchecked")
     private String formatDetails(List<Map<String, Object>> details) {
         if (details == null || details.isEmpty())
             return "";
         StringBuilder sb = new StringBuilder();
+
         for (int i = 0; i < details.size(); i++) {
-            Map<String, Object> line = details.get(i);
-            if (line == null || line.isEmpty())
+            Map<String, Object> item = details.get(i);
+            if (item == null || item.isEmpty())
                 continue;
-            sb.append("Línea ").append(i + 1).append("\n");
-            line.forEach((key, value) -> {
-                if (value == null || value.toString().isBlank())
-                    return;
-                sb.append("  ")
-                        .append(DocumentAuditTranslationHelper.translateDetailField(key))
-                        .append(": ")
-                        .append(DocumentAuditTranslationHelper.translateValue(value))
+
+            String lineLabel = resolveLineLabel(item, i);
+            sb.append(lineLabel).append("\n");
+            boolean hasFlat = false;
+            for (Map.Entry<String, Object> e : item.entrySet()) {
+                if ("changes".equals(e.getKey()))
+                    continue;
+                if (!isVisible(e.getKey()))
+                    continue;
+                if (isBlankValue(e.getValue()))
+                    continue;
+                sb.append("  ").append(fieldLabel(e.getKey()))
+                        .append(": ").append(valueLabel(e.getValue()))
                         .append("\n");
-            });
+                hasFlat = true;
+            }
+            Object changesObj = item.get("changes");
+            if (changesObj instanceof Map) {
+                Map<String, Object> changes = (Map<String, Object>) changesObj;
+                if (!changes.isEmpty()) {
+                    if (hasFlat)
+                        sb.append("\n");
+                    sb.append("  Cambios:\n");
+                    appendChanges(sb, changes, "    ");
+                }
+            }
+
             if (i < details.size() - 1)
                 sb.append("\n");
         }
+
         return sb.toString().trim();
     }
 
+    @SuppressWarnings("unchecked")
     private String formatTotals(Map<String, Object> totals) {
         if (isEmpty(totals))
             return "";
         StringBuilder sb = new StringBuilder();
+
         totals.forEach((key, value) -> {
-            if (value == null || value.toString().isBlank())
+            if ("changes".equals(key))
                 return;
-            sb.append(DocumentAuditTranslationHelper.translateTotalsField(key))
+            if (!isVisible(key))
+                return;
+            if (isBlankValue(value))
+                return;
+            sb.append(fieldLabel(key))
                     .append(": ")
-                    .append(DocumentAuditTranslationHelper.translateValue(value))
+                    .append(valueLabel(value))
                     .append("\n");
         });
+        Object changesObj = totals.get("changes");
+        if (changesObj instanceof Map) {
+            Map<String, Object> changes = (Map<String, Object>) changesObj;
+            if (!changes.isEmpty()) {
+                if (!sb.isEmpty())
+                    sb.append("\n");
+                sb.append("Cambios:\n");
+                appendChanges(sb, changes);
+            }
+        }
+
         return sb.toString().trim();
+    }
+
+    private void appendChanges(StringBuilder sb, Map<String, Object> changes) {
+        appendChanges(sb, changes, "  ");
+    }
+
+    @SuppressWarnings("unchecked")
+    private void appendChanges(StringBuilder sb, Map<String, Object> changes, String indent) {
+        changes.forEach((field, diffObj) -> {
+            if (!isVisible(field))
+                return;
+            if (!(diffObj instanceof Map))
+                return;
+            Map<String, Object> diff = (Map<String, Object>) diffObj;
+            Object before = diff.get("before");
+            Object after = diff.get("after");
+            sb.append(indent)
+                    .append(fieldLabel(field))
+                    .append(": ")
+                    .append(valueLabel(before))
+                    .append(" → ")
+                    .append(valueLabel(after))
+                    .append("\n");
+        });
+    }
+
+    private String resolveLineLabel(Map<String, Object> item, int idx) {
+        for (String key : new String[] { "invoiceCode", "invoiceId", "productId" }) {
+            Object val = item.get(key);
+            if (val != null && !val.toString().isBlank())
+                return fieldLabel(key) + " " + val;
+        }
+        return "Línea " + (idx + 1);
+    }
+
+    private boolean isVisible(String key) {
+        return DocumentAuditTranslationHelper.isVisibleField(key);
+    }
+
+    private String fieldLabel(String key) {
+        return DocumentAuditTranslationHelper.translateField(key);
+    }
+
+    private String valueLabel(Object value) {
+        if (value == null)
+            return "";
+        return DocumentAuditTranslationHelper.translateValue(value);
+    }
+
+    private String translate(Object value) {
+        if (value == null)
+            return "";
+        return DocumentAuditTranslationHelper.translateValue(value);
+    }
+
+    private boolean isBlankValue(Object value) {
+        return value == null || value.toString().isBlank();
     }
 
     private boolean isEmpty(Map<?, ?> map) {
@@ -218,4 +321,5 @@ public class DocumentExcelGenerator {
         cell.setCellStyle(style);
         cell.setCellValue(text != null ? text : "");
     }
+
 }

@@ -1,9 +1,9 @@
 package com.audit.application.dto.request;
 
 import java.time.Instant;
+import java.util.List;
 
 import com.audit.domain.enums.UserAction;
-import com.audit.domain.enums.UserRole;
 
 import lombok.Builder;
 import lombok.Getter;
@@ -19,7 +19,7 @@ public class LogSessionRequest {
     private String sessionId;
     private String userId;
     private String userName;
-    private UserRole userRole;
+    private List<String> userRole;
     private UserAction action;
     private Instant actionAt;
     private String ipAddress;

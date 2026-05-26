@@ -60,7 +60,7 @@ public class GetAuditOperationsQueryImpl implements GetAuditOperationsQuery {
         private OperationAuditResponse toResponse(AuditOperation operation) {
                 return OperationAuditResponse.builder()
                                 .userName(operation.getUserName())
-                                .userRole(operation.getUserRole().name())
+                                .userRole(operation.getUserRole())
                                 .operationType(operation.getOperationType().name())
                                 .operationAt(operation.getOperationAt())
                                 .moduleName(operation.getModuleName())

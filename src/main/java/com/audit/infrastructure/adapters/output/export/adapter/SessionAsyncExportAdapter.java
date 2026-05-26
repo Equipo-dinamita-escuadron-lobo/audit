@@ -85,7 +85,7 @@ public class SessionAsyncExportAdapter implements ISessionAsyncExportPort {
             filters.append("Usuario: ").append(request.getUserName()).append("; ");
         }
         if (request.getUserRole() != null) {
-            filters.append("Rol: ").append(request.getUserRole().name()).append("; ");
+            filters.append("Rol: ").append(request.getUserRole()).append("; ");
         }
         if (request.getDateFrom() != null) {
             filters.append("Desde: ").append(formatDateTime(request.getDateFrom())).append("; ");

@@ -3,6 +3,7 @@ package com.audit.domain.model;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import com.audit.domain.exceptions.InvalidSnapshotDataException;
 
@@ -18,13 +19,13 @@ public class DocumentData {
 
     private DocumentData(Map<String, Object> header, List<Map<String, Object>> details, Map<String, Object> totals,
             Map<String, Object> metadata) {
-        this.header = header != null ? Map.copyOf(header) : Collections.emptyMap();
+        this.header = sanitizeMap(header);
         this.details = details != null ? details.stream()
-                .map(Map::copyOf)
+                .map(DocumentData::sanitizeMap)
                 .toList()
                 : Collections.emptyList();
-        this.totals = totals != null ? Map.copyOf(totals) : Collections.emptyMap();
-        this.metadata = metadata != null ? Map.copyOf(metadata) : Collections.emptyMap();
+        this.totals = sanitizeMap(totals);
+        this.metadata = sanitizeMap(metadata);
     }
 
     public static DocumentData of(Map<String, Object> header, List<Map<String, Object>> details,
@@ -81,5 +82,17 @@ public class DocumentData {
                         "Document field name cannot be null or empty");
             }
         }
+    }
+
+    private static Map<String, Object> sanitizeMap(Map<String, Object> map) {
+        if (map == null) {
+            return Collections.emptyMap();
+        }
+        return map.entrySet().stream()
+                .filter(e -> e.getKey() != null)
+                .filter(e -> e.getValue() != null)
+                .collect(Collectors.toUnmodifiableMap(
+                        Map.Entry::getKey,
+                        Map.Entry::getValue));
     }
 }

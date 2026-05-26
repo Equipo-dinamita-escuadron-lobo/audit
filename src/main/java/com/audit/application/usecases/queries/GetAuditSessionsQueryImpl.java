@@ -57,7 +57,7 @@ public class GetAuditSessionsQueryImpl implements GetAuditSessionsQuery {
         private SessionAuditResponse toResponse(CombinedSession session) {
                 return SessionAuditResponse.builder()
                                 .userName(session.getUserName())
-                                .userRole(session.getUserRole().name())
+                                .userRole(session.getUserRole())
                                 .loginTime(session.getLoginTime())
                                 .logoutTime(session.getLogoutTime())
                                 .build();

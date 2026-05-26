@@ -58,7 +58,7 @@ public class AuditOperationListener extends AbstractMessageListener<OperationEve
             return Optional.of("userId missing");
         if (event.getUserName() == null || event.getUserName().isBlank())
             return Optional.of("userName missing");
-        if (event.getUserRole() == null || event.getUserRole().isBlank())
+        if (event.getUserRole() == null || event.getUserRole().isEmpty())
             return Optional.of("userRole missing");
         if (event.getOperationType() == null || event.getOperationType().isBlank())
             return Optional.of("operationType missing");

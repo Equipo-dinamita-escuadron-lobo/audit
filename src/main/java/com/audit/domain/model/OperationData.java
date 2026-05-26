@@ -1,7 +1,6 @@
 package com.audit.domain.model;
 
 import java.util.Map;
-import java.util.Objects;
 import com.audit.domain.exceptions.InvalidSnapshotDataException;
 
 import java.util.Collections;
@@ -70,10 +69,6 @@ public class OperationData {
         }
 
         public static FieldChange of(Object before, Object after) {
-            if (Objects.equals(before, after)) {
-                throw new InvalidSnapshotDataException(
-                        "Field change must represent a real value modification");
-            }
             return new FieldChange(before, after);
         }
     }

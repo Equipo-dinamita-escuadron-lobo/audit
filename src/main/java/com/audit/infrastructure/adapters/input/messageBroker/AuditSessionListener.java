@@ -58,6 +58,8 @@ public class AuditSessionListener extends AbstractMessageListener<SessionEventDt
             return Optional.of("userId missing");
         if (event.getUserName() == null || event.getUserName().isBlank())
             return Optional.of("userName missing");
+        if (event.getUserRole() == null || event.getUserRole().isEmpty())
+            return Optional.of("userRole missing");
         if (event.getAction() == null)
             return Optional.of("action missing");
         if (event.getActionAt() == null)

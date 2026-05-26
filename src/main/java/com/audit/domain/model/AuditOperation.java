@@ -1,9 +1,9 @@
 package com.audit.domain.model;
 
 import java.time.Instant;
+import java.util.List;
 
 import com.audit.domain.enums.OperationType;
-import com.audit.domain.enums.UserRole;
 import com.audit.domain.exceptions.InvalidAuditEventException;
 
 import lombok.Getter;
@@ -15,7 +15,7 @@ public class AuditOperation {
     private final Long id;
     private final String userId;
     private final String userName;
-    private final UserRole userRole;
+    private final List<String> userRole;
     private final OperationType operationType;
     private final Instant operationAt;
     private final String moduleName;
@@ -26,7 +26,7 @@ public class AuditOperation {
     private final Instant createdAt;
 
     // Constructor
-    private AuditOperation(Long id, String userId, String userName, UserRole userRole, OperationType operationType,
+    private AuditOperation(Long id, String userId, String userName, List<String> userRole, OperationType operationType,
             Instant operationAt, String moduleName, String affectedTable, String registerId, String enterpriseId,
             OperationData dataObject,
             Instant createdAt) {
@@ -45,7 +45,7 @@ public class AuditOperation {
     }
 
     // Factory method
-    public static AuditOperation create(String userId, String userName, UserRole userRole,
+    public static AuditOperation create(String userId, String userName, List<String> userRole,
             OperationType operationType, Instant operationAt, String moduleName, String affectedTable,
             String registerId, String enterpriseId, OperationData dataObject) {
         validateEnterpriseId(enterpriseId);
@@ -60,7 +60,7 @@ public class AuditOperation {
                 affectedTable, registerId, enterpriseId, dataObject, now);
     }
 
-    public static AuditOperation reconstruct(Long id, String userId, String userName, UserRole userRole,
+    public static AuditOperation reconstruct(Long id, String userId, String userName, List<String> userRole,
             OperationType operationType, Instant operationAt, String moduleName, String affectedTable,
             String registerId, String enterpriseId,
             OperationData dataObject, Instant createdAt) {
@@ -80,15 +80,15 @@ public class AuditOperation {
         }
     }
 
-    private static void validateUserData(String userId, String userName, UserRole userRole) {
+    private static void validateUserData(String userId, String userName, List<String> userRole) {
         if (userId == null || userId.isBlank()) {
             throw new InvalidAuditEventException("User ID cannot be null or empty");
         }
         if (userName == null || userName.isBlank()) {
             throw new InvalidAuditEventException("User name cannot be null or empty");
         }
-        if (userRole == null) {
-            throw new InvalidAuditEventException("User role cannot be null");
+        if (userRole == null || userRole.isEmpty()) {
+            throw new InvalidAuditEventException("User role cannot be null or empty");
         }
     }
 

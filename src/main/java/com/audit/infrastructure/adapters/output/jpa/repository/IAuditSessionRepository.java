@@ -37,7 +37,14 @@ public interface IAuditSessionRepository
                 AND login.action_at >= :dateFrom
                 AND login.action_at <= :dateTo
                 AND (:userName IS NULL OR login.user_name ILIKE CONCAT(:userName, '%'))
-                AND (:userRole IS NULL OR login.user_role = CAST(:userRole AS text))
+                AND (
+                    :userRole IS NULL
+                    OR EXISTS (
+                        SELECT 1
+                        FROM jsonb_array_elements_text(login.user_role::jsonb) AS role
+                        WHERE LOWER(role) LIKE LOWER(CONCAT('%', :userRole, '%'))
+                    )
+                )
             /*#sortBy*/
             """, countQuery = """
             SELECT COUNT(*)
@@ -46,7 +53,6 @@ public interface IAuditSessionRepository
                 AND action_at >= :dateFrom
                 AND action_at <= :dateTo
                 AND (:userName IS NULL OR user_name ILIKE CONCAT(:userName, '%'))
-                AND (:userRole IS NULL OR user_role = CAST(:userRole AS text))
             """, nativeQuery = true)
     Page<SessionProjection> findCombinedSessions(
             @Param("dateFrom") Instant dateFrom,
@@ -62,7 +68,14 @@ public interface IAuditSessionRepository
                 AND action_at >= :dateFrom
                 AND action_at <= :dateTo
                 AND (:userName IS NULL OR user_name ILIKE CONCAT(:userName, '%'))
-                AND (:userRole IS NULL OR user_role = CAST(:userRole AS text))
+                AND (
+                    :userRole IS NULL
+                    OR EXISTS (
+                        SELECT 1
+                        FROM jsonb_array_elements_text(user_role::jsonb) AS role
+                        WHERE LOWER(role) LIKE LOWER(CONCAT('%', :userRole, '%'))
+                    )
+                )
             """, nativeQuery = true)
     long countCombinedSessions(
             @Param("dateFrom") Instant dateFrom,
@@ -87,7 +100,11 @@ public interface IAuditSessionRepository
                 )
                 AND (
                     CAST(:userRole AS VARCHAR) IS NULL
-                    OR s.user_role = :userRole
+                    OR EXISTS (
+                        SELECT 1
+                        FROM jsonb_array_elements_text(s.user_role::jsonb) AS role
+                        WHERE LOWER(role) LIKE LOWER(CONCAT('%', :userRole, '%'))
+                    )
                 )
             GROUP BY s.session_id, s.user_name, s.user_role
 

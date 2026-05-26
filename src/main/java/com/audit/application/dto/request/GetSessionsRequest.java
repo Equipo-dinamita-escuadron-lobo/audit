@@ -3,7 +3,6 @@ package com.audit.application.dto.request;
 import java.time.Instant;
 
 import com.audit.domain.enums.UserAction;
-import com.audit.domain.enums.UserRole;
 
 import lombok.Builder;
 import lombok.Getter;
@@ -18,7 +17,7 @@ public class GetSessionsRequest {
     private Instant dateFrom;
     private Instant dateTo;
     private String userName;
-    private UserRole userRole;
+    private String userRole;
     private UserAction action;
     private String requestingUserRole;
 

@@ -1,6 +1,7 @@
 package com.audit.infrastructure.adapters.input.messageBroker.dto;
 
 import java.time.Instant;
+import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -27,7 +28,7 @@ public class SessionEventDto {
     private String userName;
 
     @JsonProperty("user_role")
-    private String userRole;
+    private List<String> userRole;
 
     @JsonProperty("action")
     private String action;

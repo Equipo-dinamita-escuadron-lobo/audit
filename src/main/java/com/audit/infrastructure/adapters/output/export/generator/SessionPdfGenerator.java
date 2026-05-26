@@ -63,7 +63,8 @@ public class SessionPdfGenerator {
             Font dataFont = new Font(Font.FontFamily.HELVETICA, 10, Font.NORMAL);
             for (CombinedSession session : sessions) {
                 addTableCell(table, Objects.toString(session.getUserName(), ""), dataFont);
-                addTableCell(table, session.getUserRole() != null ? session.getUserRole().name() : "", dataFont);
+                addTableCell(table, session.getUserRole() != null ? String.join(", ", session.getUserRole()) : "",
+                        dataFont);
                 addTableCell(table, formatDateTime(session.getLoginTime()), dataFont);
                 addTableCell(table, formatDateTime(session.getLogoutTime()), dataFont);
             }

@@ -5,7 +5,6 @@ import java.time.ZonedDateTime;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import com.audit.domain.enums.OperationType;
-import com.audit.domain.enums.UserRole;
 import com.audit.infrastructure.adapters.input.rest.validation.ValidateRange;
 
 import jakarta.validation.constraints.Max;
@@ -47,7 +46,8 @@ public class GetOperationsRestRequest implements DateRangeRequest {
     @Size(max = 100, message = "User name must not exceed 100 characters")
     private String userName;
 
-    private UserRole userRole;
+    @Size(max = 100, message = "User role must not exceed 100 characters")
+    private String userRole;
 
     private OperationType operationType;
 

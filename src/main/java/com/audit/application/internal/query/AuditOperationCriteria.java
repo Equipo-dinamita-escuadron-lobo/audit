@@ -4,7 +4,6 @@ import java.time.Duration;
 import java.time.Instant;
 
 import com.audit.domain.enums.OperationType;
-import com.audit.domain.enums.UserRole;
 import com.audit.domain.exceptions.InvalidAuditEventException;
 
 import lombok.Getter;
@@ -17,7 +16,7 @@ public class AuditOperationCriteria {
     private final String moduleName;
     private final String affectedTable;
     private final String userName;
-    private final UserRole userRole;
+    private final String userRole;
     private final OperationType operationType;
     private final String registerId;
     private final String enterpriseId;
@@ -25,7 +24,7 @@ public class AuditOperationCriteria {
     private AuditOperationCriteria(
             Instant dateFrom, Instant dateTo, String moduleName,
             String affectedTable, String userName,
-            UserRole userRole,
+            String userRole,
             OperationType operationType, String registerId, String enterpriseId) {
         this.dateFrom = dateFrom;
         this.dateTo = dateTo;
@@ -40,7 +39,7 @@ public class AuditOperationCriteria {
 
     public static AuditOperationCriteria create(Instant dateFrom, Instant dateTo, String moduleName,
             String affectedTable, String userName,
-            UserRole userRole,
+            String userRole,
             OperationType operationType, String registerId, String enterpriseId) {
 
         validateDateRange(dateFrom, dateTo);
@@ -82,7 +81,7 @@ public class AuditOperationCriteria {
     }
 
     public boolean hasUserRoleCriteria() {
-        return userRole != null;
+        return userRole != null && !userRole.isBlank();
     }
 
     public boolean hasOperationTypeCriteria() {

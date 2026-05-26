@@ -26,6 +26,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.messaging.handler.annotation.support.MethodArgumentNotValidException;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
@@ -358,6 +359,22 @@ public class GlobalExceptionHandler {
 
                 return ResponseEntity
                                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                                .body(error);
+        }
+
+        @ExceptionHandler(AuthorizationDeniedException.class)
+        public ResponseEntity<ErrorResponseDto> handleAuthorizationDenied(
+                        AuthorizationDeniedException ex,
+                        WebRequest request) {
+
+                ErrorResponseDto error = ErrorResponseFactory.build(
+                                HttpStatus.FORBIDDEN,
+                                "Forbidden",
+                                "You don't have permission to access this resource",
+                                getPath(request));
+
+                return ResponseEntity
+                                .status(HttpStatus.FORBIDDEN)
                                 .body(error);
         }
 }

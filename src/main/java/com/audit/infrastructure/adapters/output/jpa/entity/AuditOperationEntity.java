@@ -1,13 +1,13 @@
 package com.audit.infrastructure.adapters.output.jpa.entity;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import com.audit.domain.enums.OperationType;
-import com.audit.domain.enums.UserRole;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -51,9 +51,9 @@ public class AuditOperationEntity {
     @Column(name = "user_name", nullable = false, length = 100)
     private String userName;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "user_role", nullable = false, length = 50)
-    private UserRole userRole;
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "user_role", columnDefinition = "jsonb", nullable = false)
+    private List<String> userRole;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "operation_type", nullable = false, length = 20)

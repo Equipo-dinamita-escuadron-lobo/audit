@@ -6,7 +6,6 @@ import org.springframework.format.annotation.DateTimeFormat;
 
 import com.audit.domain.enums.ExportFormat;
 import com.audit.domain.enums.UserAction;
-import com.audit.domain.enums.UserRole;
 import com.audit.infrastructure.adapters.input.rest.validation.ValidateRange;
 
 import jakarta.validation.constraints.NotNull;
@@ -37,7 +36,8 @@ public class ExportSessionsRestRequest
     @Size(max = 100, message = "User name must not exceed 100 characters")
     private String userName;
 
-    private UserRole userRole;
+    @Size(max = 100, message = "User role must not exceed 100 characters")
+    private String userRole;
 
     private UserAction action;
 

@@ -4,7 +4,6 @@ import java.time.Instant;
 
 import com.audit.domain.enums.ExportFormat;
 import com.audit.domain.enums.OperationType;
-import com.audit.domain.enums.UserRole;
 
 import lombok.Builder;
 import lombok.Getter;
@@ -18,7 +17,7 @@ public class ExportOperationsRequest {
     private String moduleName;
     private String affectedTable;
     private String userName;
-    private UserRole userRole;
+    private String userRole;
     private OperationType operationType;
     private String registerId;
     private String enterpriseId;

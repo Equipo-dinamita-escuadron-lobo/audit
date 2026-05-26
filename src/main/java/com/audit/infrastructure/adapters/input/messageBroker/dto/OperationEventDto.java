@@ -1,6 +1,7 @@
 package com.audit.infrastructure.adapters.input.messageBroker.dto;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -28,8 +29,8 @@ public class OperationEventDto {
     private String userName;
 
     @JsonProperty("user_role")
-    private String userRole;
-    
+    private List<String> userRole;
+
     @JsonProperty("operation_type")
     private String operationType;
 
@@ -38,7 +39,7 @@ public class OperationEventDto {
 
     @JsonProperty("module_name")
     private String moduleName;
-    
+
     @JsonProperty("affected_table")
     private String affectedTable;
 

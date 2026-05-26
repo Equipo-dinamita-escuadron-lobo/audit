@@ -1,6 +1,7 @@
 package com.audit.application.dto.response;
 
 import java.time.Instant;
+import java.util.List;
 
 import com.audit.domain.model.OperationData;
 
@@ -12,7 +13,7 @@ import lombok.Getter;
 public class OperationAuditResponse {
 
     private String userName;
-    private String userRole;
+    private List<String> userRole;
     private Instant operationAt;
     private String moduleName;
     private String affectedTable;

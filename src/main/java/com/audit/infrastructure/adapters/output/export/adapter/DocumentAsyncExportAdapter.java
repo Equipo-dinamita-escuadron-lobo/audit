@@ -16,6 +16,7 @@ import com.audit.application.port.output.IDocumentAsyncExportPort;
 import com.audit.domain.model.AuditDocumentEvent;
 import com.audit.domain.model.ExportJob;
 import com.audit.infrastructure.adapters.output.export.generator.DocumentExcelGenerator;
+import com.audit.infrastructure.adapters.output.export.helper.DocumentAuditTranslationHelper;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -84,9 +85,15 @@ public class DocumentAsyncExportAdapter implements IDocumentAsyncExportPort {
         if (request.getUserName() != null && !request.getUserName().isBlank())
             filters.append("Usuario: ").append(request.getUserName()).append("; ");
         if (request.getOperationType() != null)
-            filters.append("Tipo operación: ").append(request.getOperationType().name()).append("; ");
+            filters.append("Tipo operación: ")
+                    .append(DocumentAuditTranslationHelper
+                            .translateValue(request.getOperationType().name()))
+                    .append("; ");
         if (request.getDocumentType() != null && !request.getDocumentType().isBlank())
-            filters.append("Tipo documento: ").append(request.getDocumentType()).append("; ");
+            filters.append("Tipo documento: ")
+                    .append(DocumentAuditTranslationHelper
+                            .translateValue(request.getDocumentType()))
+                    .append("; ");
         if (request.getDocumentCode() != null && !request.getDocumentCode().isBlank())
             filters.append("Código: ").append(request.getDocumentCode()).append("; ");
         if (request.getThirdPartyName() != null && !request.getThirdPartyName().isBlank())

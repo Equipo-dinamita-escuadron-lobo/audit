@@ -1,9 +1,12 @@
 package com.audit.infrastructure.adapters.output.jpa.entity;
 
 import java.time.Instant;
+import java.util.List;
+
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import com.audit.domain.enums.UserAction;
-import com.audit.domain.enums.UserRole;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -25,9 +28,7 @@ import lombok.Setter;
 @Table(name = "audit_session", indexes = {
         @Index(name = "idx_audit_action_date", columnList = "action, action_at DESC"),
         @Index(name = "idx_audit_session_action", columnList = "session_id, action"),
-        @Index(name = "idx_audit_user_role", columnList = "user_role"),
         @Index(name = "idx_audit_user_name", columnList = "user_name"),
-        @Index(name = "idx_audit_role_action_date", columnList = "action, user_role, action_at DESC")
 })
 @Getter
 @Setter
@@ -49,9 +50,9 @@ public class AuditSessionEntity {
     @Column(name = "user_name", nullable = false, length = 100)
     private String userName;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "user_role", nullable = false, length = 50)
-    private UserRole userRole;
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "user_role", columnDefinition = "jsonb", nullable = false)
+    private List<String> userRole;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "action", nullable = false, length = 20)

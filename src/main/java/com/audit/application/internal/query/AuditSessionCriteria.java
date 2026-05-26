@@ -4,7 +4,6 @@ import java.time.Duration;
 import java.time.Instant;
 
 import com.audit.domain.enums.UserAction;
-import com.audit.domain.enums.UserRole;
 import com.audit.domain.exceptions.InvalidAuditEventException;
 
 import lombok.Getter;
@@ -15,11 +14,11 @@ public class AuditSessionCriteria {
     private final Instant dateFrom;
     private final Instant dateTo;
     private final String userName;
-    private final UserRole userRole;
+    private final String userRole;
     private final UserAction action;
 
     private AuditSessionCriteria(Instant dateFrom, Instant dateTo, String userName,
-            UserRole userRole, UserAction action) {
+            String userRole, UserAction action) {
         this.dateFrom = dateFrom;
         this.dateTo = dateTo;
         this.userName = userName;
@@ -28,7 +27,7 @@ public class AuditSessionCriteria {
     }
 
     public static AuditSessionCriteria create(Instant dateFrom, Instant dateTo, String userName,
-            UserRole userRole, UserAction action) {
+            String userRole, UserAction action) {
         validateDateRange(dateFrom, dateTo);
         return new AuditSessionCriteria(dateFrom, dateTo, userName, userRole, action);
     }
@@ -55,7 +54,7 @@ public class AuditSessionCriteria {
     }
 
     public boolean hasRoleCriteria() {
-        return userRole != null;
+        return userRole != null && !userRole.isBlank();
     }
 
     public boolean hasUserNameCriteria() {

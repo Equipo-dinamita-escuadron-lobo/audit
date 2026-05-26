@@ -73,7 +73,7 @@ public class OperationExcelGenerator {
             // Encabezado de tabla
             String[] headers = {
                     "Usuario", "Rol", "Tipo Operación", "Fecha Operación",
-                    "Módulo", "Entidad Afectada", "Snapshot"
+                    "Módulo", "Entidad Afectada", "Detalles"
             };
             Row headerRow = sheet.createRow(rowIdx++);
             CellStyle headerStyle = styleHelper.getHeaderStyle(workbook);
@@ -91,7 +91,7 @@ public class OperationExcelGenerator {
                 Row row = sheet.createRow(rowIdx++);
 
                 createCell(row, 0, op.getUserName(), dataStyle);
-                createCell(row, 1, op.getUserRole() != null ? op.getUserRole().name() : "", dataStyle);
+                createCell(row, 1, op.getUserRole() != null ? String.join(", ", op.getUserRole()) : "", dataStyle);
                 createCell(row, 2, AuditOperationTranslationHelper.translateOperation(op.getOperationType().name()),
                         dataStyle);
                 createCell(row, 3, op.getOperationAt() != null ? DATE_FORMATTER.format(op.getOperationAt()) : "",

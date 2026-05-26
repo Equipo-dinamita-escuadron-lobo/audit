@@ -79,7 +79,7 @@ public class SessionExcelGenerator {
                 c0.setCellStyle(dataStyle);
 
                 Cell c1 = row.createCell(1);
-                c1.setCellValue(session.getUserRole() != null ? session.getUserRole().name() : "");
+                c1.setCellValue(session.getUserRole() != null ? String.join(", ", session.getUserRole()) : "");
                 c1.setCellStyle(dataStyle);
 
                 Cell c2 = row.createCell(2);

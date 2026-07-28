@@ -74,7 +74,9 @@ public class AuditSessionListener extends AbstractMessageListener<SessionEventDt
 
     @Override
     protected String extractEventType(SessionEventDto event) {
-        return event != null && event.getAction() != null ? event.getAction() : null;
+        return event != null && event.getAction() != null
+                ? event.getAction()
+                : "UNKNOWN";
     }
 
     @Override

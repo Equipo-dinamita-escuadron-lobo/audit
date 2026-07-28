@@ -92,7 +92,7 @@ public class AuditDocumentEventDtoListener extends AbstractMessageListener<Docum
 
     @Override
     protected String extractEventType(DocumentEventDto event) {
-        return event != null && event.getOperationType() != null ? event.getOperationType() : null;
+        return event != null && event.getOperationType() != null ? event.getOperationType() : "UNKNOWN";
     }
 
     @Override

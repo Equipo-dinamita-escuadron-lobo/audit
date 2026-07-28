@@ -14,6 +14,7 @@ import lombok.Getter;
 @Getter
 @Builder
 public class SessionAuditResponse {
+    private String sessionId;
     private String userName;
     private List<String> userRole;
     private Instant loginTime;

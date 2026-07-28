@@ -88,7 +88,7 @@ public class AuditOperationListener extends AbstractMessageListener<OperationEve
 
     @Override
     protected String extractEventType(OperationEventDto event) {
-        return event != null && event.getOperationType() != null ? event.getOperationType() : null;
+        return event != null && event.getOperationType() != null ? event.getOperationType() : "UNKNOWN";
     }
 
     @Override

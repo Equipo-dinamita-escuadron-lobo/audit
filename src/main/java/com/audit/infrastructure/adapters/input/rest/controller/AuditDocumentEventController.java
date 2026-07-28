@@ -55,7 +55,7 @@ public class AuditDocumentEventController {
     }
 
     @GetMapping("/{documentCode}/details")
-    @PreAuthorize("hasAnyRole('Administrador', 'Profesor')")
+    @PreAuthorize("hasAnyRole('Administrador', 'Profesor', 'Estudiante')")
     public ResponseEntity<List<DocumentEventDetailResponse>> getDocumentEventDetails(
             @PathVariable String documentCode,
             @NotNull @RequestParam String enterpriseId) {
